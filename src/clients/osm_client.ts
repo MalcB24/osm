@@ -2,18 +2,34 @@ import type {
   AvailableBadgesResponse,
   BadgeRecordsResponse,
   BadgeRequirement,
+  ActualAttendanceMember,
+  ActualAttendanceResponse,
   EventsResponse,
   Id,
+  MarkedAttendance,
+  MarkedAttendanceResponse,
   MembersResponse,
   OAuthToken,
   OsmEvent,
   OsmMember,
   ResourceResponse,
+  SectionTerm,
+  SectionTermsResponse,
 } from "../models/index.js";
 import { KeyVaultService } from "../services/key_vault_service.js";
 
 const tokenUrl = "https://osm.scouts.mt/oauth/token";
 const resourceUrl = "https://osm.scouts.mt/oauth/resource";
+
+export class OsmRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly body: string,
+  ) {
+    super(message);
+  }
+}
 
 export class OSMClient {
   private clientId = "";
@@ -355,6 +371,30 @@ export class OSMClient {
     );
   }
 
+  async getTerms(sectionId: Id): Promise<SectionTerm[]> {
+    const r = await this.get(
+      `https://osm.scouts.mt/v3/settings/terms/recurring/${sectionId}`,
+    );
+
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Terms request failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
+    const data = (await r.json()) as SectionTermsResponse;
+
+    if (!data.status) {
+      throw new Error(data.error ?? "Unable to get terms.");
+    }
+
+    return data.data.terms[String(sectionId)] ?? [];
+  }
+
   async *sections(): AsyncGenerator<[string, Id, Id]> {
     const r = await this.get(resourceUrl);
     const data = (await r.json()) as ResourceResponse;
@@ -393,6 +433,66 @@ export class OSMClient {
       console.log(await r.text());
       return [];
     }
+  }
+
+  async getMarkedAttendance(
+    sectionId: Id,
+    termId: Id,
+    eventId: Id,
+    options: {
+      mode?: string;
+    } = {},
+  ): Promise<MarkedAttendance[]> {
+    const r = await this.get(
+      "https://osm.scouts.mt/ext/events/event/",
+      {
+        action: "getAttendance",
+        eventid: eventId,
+        sectionid: sectionId,
+        termid: termId,
+        mode: options.mode ?? "all",
+      },
+    );
+
+    const data =
+      (await r.json()) as MarkedAttendanceResponse;
+
+    return data.items ?? [];
+  }
+
+  async getActualAttendance(
+    sectionId: Id,
+    termId: Id,
+    options: {
+      section?: string;
+      noTotal?: boolean;
+    } = {},
+  ): Promise<ActualAttendanceMember[]> {
+    const noTotal = options.noTotal ?? true;
+
+    const r = await this.get(
+      "https://osm.scouts.mt/ext/members/attendance/",
+      {
+        action: "get",
+        sectionid: sectionId,
+        termid: termId,
+        section: options.section ?? "mtventures",
+        nototal: noTotal ? "true" : "false",
+      },
+    );
+
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Actual attendance request failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
+    const data = (await r.json()) as ActualAttendanceResponse;
+    return data.items ?? [];
   }
 
   async getAvailableBadges(

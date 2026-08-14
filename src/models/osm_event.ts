@@ -23,3 +23,24 @@ export interface EventsResponse {
   identifier?: string;
   items?: OsmEvent[];
 }
+
+export interface MarkedAttendance {
+  scoutid: Id;
+  attending: string;
+  payment?: string;
+  firstname: string;
+  lastname: string;
+  dob?: string;
+  patrolid?: number;
+  photo_guid?: string;
+  emailable?: boolean;
+  _filterString?: string;
+
+  [key: string]: unknown;
+}
+
+export interface MarkedAttendanceResponse {
+  identifier?: string;
+  eventid?: Id;
+  items?: MarkedAttendance[];
+}

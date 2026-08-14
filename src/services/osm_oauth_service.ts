@@ -10,9 +10,12 @@ const authorizationBaseUrl = "https://osm.scouts.mt/oauth/authorize";
 const tokenUrl = "https://osm.scouts.mt/oauth/token";
 
 const scope = [
+  "section:member:read",
   "section:member:write",
+  "section:event:read",
   "section:event:write",
   "section:badge:read",
+  "section:attendance:write",
   "section:administration:write",
 ];
 
