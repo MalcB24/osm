@@ -24,6 +24,45 @@ export interface EventsResponse {
   items?: OsmEvent[];
 }
 
+export interface EventBadgeLink {
+  picture?: string;
+  link_relation_id: Id;
+  same_as?: unknown[];
+  badge_id: Id;
+  badge_version: Id;
+  column_id: Id;
+  badge?: string;
+  badgeLongName: string;
+  badgetype?: string;
+  badgetypeLongName?: string;
+  columnname?: string;
+  columnnameLongName?: string;
+  data?: string;
+  section?: string;
+  sectionLongName?: string;
+
+  [key: string]: unknown;
+}
+
+export interface OsmEventDetails {
+  eventid: Id;
+  name: string;
+  type: string | null;
+  startdate: string;
+  enddate: string;
+  starttime: string | null;
+  endtime: string | null;
+  cost?: string;
+  location?: string;
+  notes?: string;
+  notepad?: string;
+  publicnotes?: string;
+  sectionid: Id;
+  badgelinks?: EventBadgeLink[];
+
+  [key: string]: unknown;
+}
+
 export interface MarkedAttendance {
   scoutid: Id;
   attending: string;

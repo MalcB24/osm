@@ -1,7 +1,9 @@
 import type {
   AvailableBadgesResponse,
   BadgeRecordsResponse,
+  BadgeRecordUpdateResponse,
   BadgeRequirement,
+  MultipleBadgeRecordUpdate,
   ActualAttendanceMember,
   ActualAttendanceResponse,
   EventsResponse,
@@ -11,10 +13,12 @@ import type {
   MembersResponse,
   OAuthToken,
   OsmEvent,
+  OsmEventDetails,
   OsmMember,
   ResourceResponse,
   SectionTerm,
   SectionTermsResponse,
+  SingleBadgeRecordUpdate,
 } from "../models/index.js";
 import { KeyVaultService } from "../services/key_vault_service.js";
 
@@ -29,6 +33,14 @@ export class OsmRequestError extends Error {
   ) {
     super(message);
   }
+}
+
+function getOsmLogicalStatusCode(
+  response: { status?: boolean; error?: string | null },
+): number {
+  return response.error?.toLowerCase() === "no access"
+    ? 403
+    : 400;
 }
 
 export class OSMClient {
@@ -261,6 +273,32 @@ export class OSMClient {
     return this.request(requestUrl);
   }
 
+  private async postForm(
+    url: string,
+    queryParams: Record<string, string | number>,
+    bodyParams: Record<string, string | number | boolean>,
+  ): Promise<Response> {
+    const requestUrl = new URL(url);
+
+    for (const [key, value] of Object.entries(queryParams)) {
+      requestUrl.searchParams.set(key, String(value));
+    }
+
+    const body = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(bodyParams)) {
+      body.set(key, String(value));
+    }
+
+    return this.request(requestUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+  }
+
   async checkResourceAccess(): Promise<boolean> {
     const r = await this.get(resourceUrl);
 
@@ -435,6 +473,32 @@ export class OSMClient {
     }
   }
 
+  async getEvent(
+    sectionId: Id,
+    eventId: Id,
+  ): Promise<OsmEventDetails> {
+    const r = await this.get(
+      "https://osm.scouts.mt/ext/events/event/",
+      {
+        action: "getStructureForEvent",
+        sectionid: sectionId,
+        eventid: eventId,
+      },
+    );
+
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Event request failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
+    return (await r.json()) as OsmEventDetails;
+  }
+
   async getMarkedAttendance(
     sectionId: Id,
     termId: Id,
@@ -553,5 +617,89 @@ export class OSMClient {
     }
 
     return data.data.requirements ?? [];
+  }
+
+  async updateSingleBadgeRecord(
+    update: SingleBadgeRecordUpdate,
+  ): Promise<BadgeRecordUpdateResponse> {
+    const r = await this.postForm(
+      "https://osm.scouts.mt/ext/badges/records/",
+      { action: "updateSingleRecord" },
+      {
+        scoutid: update.scoutId,
+        badge_id: update.badgeId,
+        badge_version: update.badgeVersion,
+        batch: JSON.stringify(update.values),
+        section_id: update.sectionId,
+        payload: update.payload ?? true,
+      },
+    );
+
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Badge record update failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
+    const data = (await r.json()) as BadgeRecordUpdateResponse;
+
+    if (data.status === false || data.error) {
+      const body = JSON.stringify(data);
+
+      throw new OsmRequestError(
+        `Badge record update failed: ${body}`,
+        getOsmLogicalStatusCode(data),
+        body,
+      );
+    }
+
+    return data;
+  }
+
+  async updateMultipleBadgeRecords(
+    update: MultipleBadgeRecordUpdate,
+  ): Promise<BadgeRecordUpdateResponse> {
+    const r = await this.postForm(
+      "https://osm.scouts.mt/ext/badges/records/",
+      { action: "updateMultipleRecords" },
+      {
+        scouts: JSON.stringify(update.scoutIds),
+        value: update.value,
+        field: update.field,
+        section_id: update.sectionId,
+        overwrite: update.overwrite ?? true,
+        badge_id: update.badgeId,
+        badge_version: update.badgeVersion,
+        payload: update.payload ?? 1,
+      },
+    );
+
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Badge records update failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
+    const data = (await r.json()) as BadgeRecordUpdateResponse;
+
+    if (data.status === false || data.error) {
+      const body = JSON.stringify(data);
+
+      throw new OsmRequestError(
+        `Badge records update failed: ${body}`,
+        getOsmLogicalStatusCode(data),
+        body,
+      );
+    }
+
+    return data;
   }
 }

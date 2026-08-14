@@ -15,6 +15,7 @@ const scope = [
   "section:event:read",
   "section:event:write",
   "section:badge:read",
+  "section:badge:write",
   "section:attendance:write",
   "section:administration:write",
 ];

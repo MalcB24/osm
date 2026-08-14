@@ -18,13 +18,18 @@ export type {
   OsmMember,
 } from "./osm_member.js";
 export type {
+  EventBadgeLink,
   EventsResponse,
   MarkedAttendance,
   MarkedAttendanceResponse,
+  OsmEventDetails,
   OsmEvent,
 } from "./osm_event.js";
 export type {
   AvailableBadgesResponse,
   BadgeRecordsResponse,
+  BadgeRecordUpdateResponse,
   BadgeRequirement,
+  MultipleBadgeRecordUpdate,
+  SingleBadgeRecordUpdate,
 } from "./osm_badge.js";
