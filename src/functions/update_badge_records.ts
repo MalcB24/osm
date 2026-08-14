@@ -15,7 +15,6 @@ import type {
 } from "../models/index.js";
 
 interface BadgeRecordUpdateRequest {
-  sectionId: string | number;
   badgeId: string | number;
   badgeVersion: string | number;
   payload?: boolean | number | string;
@@ -67,6 +66,19 @@ function getRequiredBodyValue(
   return value;
 }
 
+function getRequiredRouteParam(
+  request: HttpRequest,
+  name: string,
+): string {
+  const value = request.params[name];
+
+  if (!value) {
+    throw new Error(`Missing route parameter "${name}".`);
+  }
+
+  return value;
+}
+
 async function getRequestBody(
   request: HttpRequest,
 ): Promise<BadgeRecordUpdateRequest> {
@@ -77,7 +89,6 @@ async function getRequestBody(
   }
 
   const updateRequest: BadgeRecordUpdateRequest = {
-    sectionId: getRequiredBodyValue(body, "sectionId"),
     badgeId: getRequiredBodyValue(body, "badgeId"),
     badgeVersion: getRequiredBodyValue(body, "badgeVersion"),
   };
@@ -167,13 +178,14 @@ function shouldUseMultipleRecords(
 
 function getSingleUpdates(
   body: BadgeRecordUpdateRequest,
+  sectionId: string,
 ): SingleBadgeRecordUpdate[] {
   if (body.updates) {
     return body.updates.map((update) => ({
       scoutId: update.scoutId,
       badgeId: body.badgeId,
       badgeVersion: body.badgeVersion,
-      sectionId: body.sectionId,
+      sectionId,
       values: update.values,
       payload: body.payload,
     }));
@@ -185,7 +197,7 @@ function getSingleUpdates(
         scoutId: body.scoutId,
         badgeId: body.badgeId,
         badgeVersion: body.badgeVersion,
-        sectionId: body.sectionId,
+        sectionId,
         values: body.values,
         payload: body.payload,
       },
@@ -201,7 +213,7 @@ function getSingleUpdates(
       scoutId,
       badgeId: body.badgeId,
       badgeVersion: body.badgeVersion,
-      sectionId: body.sectionId,
+      sectionId,
       values: { [String(body.field)]: body.value ?? "" },
       payload: body.payload,
     }));
@@ -216,6 +228,8 @@ export async function updateBadgeRecords(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  const sectionId = getRequiredRouteParam(request, "sectionId");
+  const termId = getRequiredRouteParam(request, "termId");
   let body: BadgeRecordUpdateRequest;
 
   try {
@@ -231,7 +245,7 @@ export async function updateBadgeRecords(
   }
 
   context.log(
-    `Updating badge "${body.badgeId}" version "${body.badgeVersion}" in section "${body.sectionId}".`,
+    `Updating badge "${body.badgeId}" version "${body.badgeVersion}" in section "${sectionId}" term "${termId}".`,
   );
 
   const client = await OSMClient.create();
@@ -242,7 +256,7 @@ export async function updateBadgeRecords(
         scoutIds: body.scoutIds,
         badgeId: body.badgeId,
         badgeVersion: body.badgeVersion,
-        sectionId: body.sectionId,
+        sectionId,
         field: body.field,
         value: body.value,
         overwrite: body.overwrite ?? true,
@@ -260,7 +274,7 @@ export async function updateBadgeRecords(
 
     const results = [];
 
-    for (const update of getSingleUpdates(body)) {
+    for (const update of getSingleUpdates(body, sectionId)) {
       results.push(await client.updateSingleBadgeRecord(update));
     }
 
@@ -291,6 +305,6 @@ export async function updateBadgeRecords(
 app.http("update_badge_records", {
   methods: ["POST"],
   authLevel: "anonymous",
-  route: "badge-records",
+  route: "sections/{sectionId}/terms/{termId}/badge-records",
   handler: updateBadgeRecords,
 });
