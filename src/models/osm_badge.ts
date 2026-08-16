@@ -1,4 +1,4 @@
-export interface AvailableBadgesResponse {
+export interface AvailableBadge {
   badge_id: number;
   badge_version: number;
   name: string;
@@ -8,6 +8,17 @@ export interface AvailableBadgesResponse {
   group_name: string;
   at_home: boolean;
 }
+
+export type AvailableBadgesResponse =
+  | AvailableBadge
+  | AvailableBadge[]
+  | {
+      items?: AvailableBadge[];
+      data?: AvailableBadge[] | Record<string, AvailableBadge[]>;
+      badges?: AvailableBadge[];
+
+      [key: string]: unknown;
+    };
 
 export interface BadgeRequirement {
   name: string;
@@ -59,4 +70,28 @@ export interface MultipleBadgeRecordUpdate {
   value: string;
   overwrite?: boolean;
   payload?: boolean | number | string;
+}
+
+export interface EventBadgeLinkCreate {
+  sectionId: string | number;
+  eventId: string | number;
+  badgeId: string | number;
+  badgeVersion: string | number;
+  // picture: string;
+  columnId: string | number;
+  columnData: string;
+  section?: string;
+  newColumnName?: string;
+}
+
+export interface EventBadgeLinkCreateResponse {
+  status?: boolean;
+  error?: string | null;
+  data?: {
+    relation_id?: string | number;
+    column_id?: string | number;
+
+    [key: string]: unknown;
+  };
+  meta?: unknown[];
 }

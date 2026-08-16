@@ -26,10 +26,19 @@ export type {
   OsmEvent,
 } from "./osm_event.js";
 export type {
+  AvailableBadge,
   AvailableBadgesResponse,
   BadgeRecordsResponse,
   BadgeRecordUpdateResponse,
   BadgeRequirement,
+  EventBadgeLinkCreate,
+  EventBadgeLinkCreateResponse,
   MultipleBadgeRecordUpdate,
   SingleBadgeRecordUpdate,
 } from "./osm_badge.js";
+export type {
+  BadgeCandidate,
+  BadgeMatchResponse,
+  SuggestedEventBadgesResponse,
+  SuggestEventBadgesRequest,
+} from "./event_badge_suggestion.js";

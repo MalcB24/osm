@@ -3,6 +3,8 @@ import type {
   BadgeRecordsResponse,
   BadgeRecordUpdateResponse,
   BadgeRequirement,
+  EventBadgeLinkCreate,
+  EventBadgeLinkCreateResponse,
   MultipleBadgeRecordUpdate,
   ActualAttendanceMember,
   ActualAttendanceResponse,
@@ -695,6 +697,54 @@ export class OSMClient {
 
       throw new OsmRequestError(
         `Badge records update failed: ${body}`,
+        getOsmLogicalStatusCode(data),
+        body,
+      );
+    }
+
+    return data;
+  }
+
+  async linkBadgeToEvent(
+    link: EventBadgeLinkCreate,
+  ): Promise<EventBadgeLinkCreateResponse> {
+    const r = await this.postForm(
+      "https://osm.scouts.mt/ext/badges/records/",
+      {
+        action: "linkBadgeToItem",
+        sectionid: link.sectionId,
+      },
+      {
+        section: link.section ?? "mtventures",
+        sectionid: link.sectionId,
+        type: "event",
+        id: link.eventId,
+        badge_id: link.badgeId,
+        badge_version: link.badgeVersion,
+        // picture: link.picture,
+        column_id: link.columnId,
+        column_data: link.columnData,
+        new_column_name: link.newColumnName ?? "",
+      },
+    );
+
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Event badge link failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
+    const data = (await r.json()) as EventBadgeLinkCreateResponse;
+
+    if (data.status === false || data.error) {
+      const body = JSON.stringify(data);
+
+      throw new OsmRequestError(
+        `Event badge link failed: ${body}`,
         getOsmLogicalStatusCode(data),
         body,
       );
