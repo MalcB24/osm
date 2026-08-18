@@ -18,6 +18,20 @@ import {
   mcpSuggestEventBadges,
   mcpSuggestGodBadges,
 } from "../handlers/mcp/event_badge_tools.js";
+import { mcpGetToday } from "../handlers/mcp/utility_tools.js";
+
+app.mcpTool("get_today", {
+  toolName: "get_today",
+  description:
+    "Get today's date. Call this before interpreting relative dates like today, yesterday, or tomorrow.",
+  toolProperties: {
+    timeZone: arg
+      .string()
+      .optional()
+      .describe("IANA time zone. Defaults to Europe/Malta."),
+  },
+  handler: mcpGetToday,
+});
 
 app.mcpTool("osm_get_scouts", {
   toolName: "osm_get_scouts",
