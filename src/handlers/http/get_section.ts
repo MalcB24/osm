@@ -5,6 +5,7 @@ import {
 } from "@azure/functions";
 
 import { OSMClient } from "../../clients/osm_client.js";
+import { getSections } from "../../services/section_service.js";
 
 export async function getSection(
   request: HttpRequest,
@@ -17,28 +18,11 @@ export async function getSection(
   const client = await OSMClient.create();
 
   try {
-    const sections: Record<
-      string,
-      { sectionId: string; termId: string }
-    > = {};
-
-    for await (const [
-      sectionName,
-      sectionId,
-      termId,
-    ] of client.sections()) {
-      sections[sectionName] = {
-        sectionId: sectionId.toString(),
-        termId: termId.toString(),
-      };
-    }
-
     return {
       status: 200,
-      jsonBody: sections,
+      jsonBody: await getSections(client),
     };
   } finally {
     await client.close();
   }
 }
-

@@ -1,5 +1,6 @@
 import type { InvocationContext } from "@azure/functions";
 
+import { getSections } from "../../services/section_service.js";
 import {
   getOptionalToolString,
   getRequiredToolString,
@@ -7,6 +8,15 @@ import {
   McpToolRequest,
   withOsmClient,
 } from "../../utils/mcp.js";
+
+export async function mcpGetSections(
+  _toolRequest: McpToolRequest,
+  context: InvocationContext,
+): Promise<string> {
+  context.log("MCP getting OSM sections.");
+
+  return withOsmClient(context, (client) => getSections(client));
+}
 
 export async function mcpGetScouts(
   toolRequest: McpToolRequest,

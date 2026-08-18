@@ -8,6 +8,7 @@ import {
   mcpGetEvent,
   mcpGetEvents,
   mcpGetScouts,
+  mcpGetSections,
   mcpGetTerms,
 } from "../handlers/mcp/osm_read_tools.js";
 import {
@@ -26,6 +27,14 @@ app.mcpTool("osm_get_scouts", {
     sort: arg.string().optional().describe("Sort field."),
   },
   handler: mcpGetScouts,
+});
+
+app.mcpTool("osm_get_sections", {
+  toolName: "osm_get_sections",
+  description:
+    "Get OSM sections available to the authenticated user, with their current term ids.",
+  toolProperties: {},
+  handler: mcpGetSections,
 });
 
 app.mcpTool("osm_get_terms", {
