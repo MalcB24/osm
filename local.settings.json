@@ -8,6 +8,9 @@
     "AZURE_OPENAI_ENDPOINT" : "https://malco-miod0w4h-swedencentral.services.ai.azure.com/openai/v1",
     "AZURE_OPENAI_DEPLOYMENT" : "gpt-5.6-luna",
     "AZURE_OPENAI_API_VERSION" : "v1",
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "ENTRA_TENANT_ID" : "915153bb-af46-4271-a7c4-feff453d1356",
+    "ENTRA_CLIENT_ID" : "8f09c989-703e-4058-a665-9ee5c336ca52",
+    "CHATGPT_AUTH_RESOURCE_URL" : "https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net"
   }
 }
