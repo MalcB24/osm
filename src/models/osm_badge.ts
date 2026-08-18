@@ -72,19 +72,18 @@ export interface MultipleBadgeRecordUpdate {
   payload?: boolean | number | string;
 }
 
-export interface EventBadgeLinkCreate {
+export interface CreateEventBadgeLinkRequest {
   sectionId: string | number;
   eventId: string | number;
   badgeId: string | number;
   badgeVersion: string | number;
-  // picture: string;
   columnId: string | number;
   columnData: string;
   section?: string;
   newColumnName?: string;
 }
 
-export interface EventBadgeLinkCreateResponse {
+export interface CreateEventBadgeLinkResponse {
   status?: boolean;
   error?: string | null;
   data?: {

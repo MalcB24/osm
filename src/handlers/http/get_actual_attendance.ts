@@ -1,5 +1,4 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
@@ -8,13 +7,13 @@ import {
 import {
   OSMClient,
   OsmRequestError,
-} from "../clients/osm_client.js";
+} from "../../clients/osm_client.js";
 import type {
   ActualAttendanceDate,
   ActualAttendanceEntry,
   ActualAttendanceMember,
   ActualAttendanceResult,
-} from "../models/index.js";
+} from "../../models/index.js";
 
 interface ActualAttendanceFilters {
   date?: string;
@@ -269,9 +268,3 @@ export async function getActualAttendance(
   }
 }
 
-app.http("get_actual_attendance", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/terms/{termId}/actual-attendance",
-  handler: getActualAttendance,
-});

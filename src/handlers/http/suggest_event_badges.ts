@@ -1,5 +1,4 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
@@ -8,15 +7,15 @@ import {
 import {
   OSMClient,
   OsmRequestError,
-} from "../clients/osm_client.js";
-import type { SuggestEventBadgesRequest } from "../models/index.js";
-import { parseSuggestEventBadgesRequest } from "../requests/suggest_event_badges_request.js";
-import { AzureOpenAIService } from "../services/azure_openai_service.js";
-import { createEventBadgeSuggestions } from "../services/event_badge_suggestion_service.js";
+} from "../../clients/osm_client.js";
+import type { SuggestEventBadgesRequest } from "../../models/index.js";
+import { parseSuggestEventBadgesRequest } from "../../requests/suggest_event_badges_request.js";
+import { AzureOpenAIService } from "../../services/azure_openai_service.js";
+import { createEventBadgeSuggestions } from "../../services/event_badge_suggestion_service.js";
 import {
   badRequest,
   getRequiredRouteParam,
-} from "../utils/http.js";
+} from "../../utils/http.js";
 
 export async function suggestEventBadges(
   request: HttpRequest,
@@ -88,9 +87,3 @@ export async function suggestEventBadges(
   }
 }
 
-app.http("suggest_event_badges", {
-  methods: ["POST"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/terms/{termId}/event-badge-suggestions",
-  handler: suggestEventBadges,
-});

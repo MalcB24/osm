@@ -1,11 +1,10 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
 
-import { OsmOAuthService } from "../services/osm_oauth_service.js";
+import { OsmOAuthService } from "../../services/osm_oauth_service.js";
 
 function getCallbackUrl(request: HttpRequest): string {
   if (process.env.OSM_REDIRECT_URI) {
@@ -77,16 +76,4 @@ export async function completeOsmAuth(
   };
 }
 
-app.http("osm_auth", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "osm/auth",
-  handler: startOsmAuth,
-});
 
-app.http("osm_auth_callback", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "osm/auth/callback",
-  handler: completeOsmAuth,
-});

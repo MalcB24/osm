@@ -1,5 +1,4 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
@@ -8,16 +7,16 @@ import {
 import {
   OSMClient,
   OsmRequestError,
-} from "../clients/osm_client.js";
-import type { EventBadgeLinkCreate } from "../models/index.js";
+} from "../../clients/osm_client.js";
+import type { CreateEventBadgeLinkRequest } from "../../models/index.js";
 import {
   LinkEventBadgeRequest,
   parseLinkEventBadgeRequest,
-} from "../requests/link_event_badge_request.js";
+} from "../../requests/link_event_badge_request.js";
 import {
   badRequest,
   getRequiredRouteParam,
-} from "../utils/http.js";
+} from "../../utils/http.js";
 
 export async function linkEventBadge(
   request: HttpRequest,
@@ -40,12 +39,11 @@ export async function linkEventBadge(
   const client = await OSMClient.create();
 
   try {
-    const link: EventBadgeLinkCreate = {
+    const link: CreateEventBadgeLinkRequest = {
       sectionId,
       eventId,
       badgeId: body.badgeId,
       badgeVersion: body.badgeVersion,
-      // picture: body.picture,
       columnId: body.columnId,
       columnData: body.columnData,
       section: body.section,
@@ -73,9 +71,3 @@ export async function linkEventBadge(
   }
 }
 
-app.http("link_event_badge", {
-  methods: ["POST"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/events/{eventId}/badges",
-  handler: linkEventBadge,
-});

@@ -1,5 +1,4 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
@@ -8,11 +7,11 @@ import {
 import {
   OSMClient,
   OsmRequestError,
-} from "../clients/osm_client.js";
+} from "../../clients/osm_client.js";
 import type {
   MultipleBadgeRecordUpdate,
   SingleBadgeRecordUpdate,
-} from "../models/index.js";
+} from "../../models/index.js";
 
 interface BadgeRecordUpdateRequest {
   badgeId: string | number;
@@ -302,9 +301,3 @@ export async function updateBadgeRecords(
   }
 }
 
-app.http("update_badge_records", {
-  methods: ["POST"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/terms/{termId}/badge-records",
-  handler: updateBadgeRecords,
-});

@@ -31,8 +31,8 @@ export type {
   BadgeRecordsResponse,
   BadgeRecordUpdateResponse,
   BadgeRequirement,
-  EventBadgeLinkCreate,
-  EventBadgeLinkCreateResponse,
+  CreateEventBadgeLinkRequest,
+  CreateEventBadgeLinkResponse,
   MultipleBadgeRecordUpdate,
   SingleBadgeRecordUpdate,
 } from "./osm_badge.js";

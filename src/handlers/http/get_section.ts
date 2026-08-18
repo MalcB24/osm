@@ -1,11 +1,10 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
 
-import { OSMClient } from "../clients/osm_client.js";
+import { OSMClient } from "../../clients/osm_client.js";
 
 export async function getSection(
   request: HttpRequest,
@@ -43,9 +42,3 @@ export async function getSection(
   }
 }
 
-app.http("get_section", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "sections",
-  handler: getSection,
-});

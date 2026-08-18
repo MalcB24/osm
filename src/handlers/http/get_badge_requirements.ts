@@ -1,11 +1,10 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
 
-import { OSMClient } from "../clients/osm_client.js";
+import { OSMClient } from "../../clients/osm_client.js";
 
 function getRequiredRouteParam(
   request: HttpRequest,
@@ -20,43 +19,43 @@ function getRequiredRouteParam(
   return value;
 }
 
-export async function getMarkedAttendance(
+export async function getBadgeRequirements(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
   const sectionId = getRequiredRouteParam(request, "sectionId");
   const termId = getRequiredRouteParam(request, "termId");
-  const eventId = getRequiredRouteParam(request, "eventId");
+  const badgeId = getRequiredRouteParam(request, "badgeId");
+  const badgeVersion = getRequiredRouteParam(
+    request,
+    "badgeVersion",
+  );
 
   context.log(
-    `Getting marked attendance for event "${eventId}" in section "${sectionId}" term "${termId}".`,
+    `Getting requirements for badge "${badgeId}" version "${badgeVersion}" in section "${sectionId}" term "${termId}".`,
   );
 
   const client = await OSMClient.create();
 
   try {
-    const attendance = await client.getMarkedAttendance(
+    const requirements = await client.getBadgeRequirements(
       sectionId,
       termId,
-      eventId,
+      badgeId,
+      badgeVersion,
       {
-        mode: request.query.get("mode") ?? undefined,
+        section: request.query.get("section") ?? undefined,
+        payload: request.query.get("payload") ?? undefined,
+        typeId: request.query.get("typeId") ?? undefined,
       },
     );
 
     return {
       status: 200,
-      jsonBody: attendance,
+      jsonBody: requirements,
     };
   } finally {
     await client.close();
   }
 }
 
-app.http("get_marked_attendance", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route:
-    "sections/{sectionId}/terms/{termId}/events/{eventId}/marked-attendance",
-  handler: getMarkedAttendance,
-});

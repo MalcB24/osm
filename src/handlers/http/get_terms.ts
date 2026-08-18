@@ -1,5 +1,4 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
@@ -8,8 +7,8 @@ import {
 import {
   OSMClient,
   OsmRequestError,
-} from "../clients/osm_client.js";
-import type { SectionTerm } from "../models/index.js";
+} from "../../clients/osm_client.js";
+import type { SectionTerm } from "../../models/index.js";
 
 interface TermFilters {
   current?: boolean;
@@ -164,9 +163,3 @@ export async function getTerms(
   }
 }
 
-app.http("get_terms", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/terms",
-  handler: getTerms,
-});

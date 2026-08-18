@@ -1,12 +1,11 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
 
-import { OSMClient } from "../clients/osm_client.js";
-import type { OsmEvent } from "../models/index.js";
+import { OSMClient } from "../../clients/osm_client.js";
+import type { OsmEvent } from "../../models/index.js";
 
 interface EventFilters {
   future?: boolean;
@@ -215,9 +214,3 @@ export async function getEvents(
   }
 }
 
-app.http("get_events", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/terms/{termId}/events",
-  handler: getEvents,
-});

@@ -3,8 +3,8 @@ import type {
   BadgeRecordsResponse,
   BadgeRecordUpdateResponse,
   BadgeRequirement,
-  EventBadgeLinkCreate,
-  EventBadgeLinkCreateResponse,
+  CreateEventBadgeLinkRequest,
+  CreateEventBadgeLinkResponse,
   MultipleBadgeRecordUpdate,
   ActualAttendanceMember,
   ActualAttendanceResponse,
@@ -706,8 +706,8 @@ export class OSMClient {
   }
 
   async linkBadgeToEvent(
-    link: EventBadgeLinkCreate,
-  ): Promise<EventBadgeLinkCreateResponse> {
+    link: CreateEventBadgeLinkRequest,
+  ): Promise<CreateEventBadgeLinkResponse> {
     const r = await this.postForm(
       "https://osm.scouts.mt/ext/badges/records/",
       {
@@ -721,7 +721,6 @@ export class OSMClient {
         id: link.eventId,
         badge_id: link.badgeId,
         badge_version: link.badgeVersion,
-        // picture: link.picture,
         column_id: link.columnId,
         column_data: link.columnData,
         new_column_name: link.newColumnName ?? "",
@@ -738,7 +737,7 @@ export class OSMClient {
       );
     }
 
-    const data = (await r.json()) as EventBadgeLinkCreateResponse;
+    const data = (await r.json()) as CreateEventBadgeLinkResponse;
 
     if (data.status === false || data.error) {
       const body = JSON.stringify(data);

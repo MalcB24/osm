@@ -1,14 +1,10 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
 
-import {
-  OSMClient,
-  OsmRequestError,
-} from "../clients/osm_client.js";
+import { OSMClient } from "../../clients/osm_client.js";
 
 function getRequiredRouteParam(
   request: HttpRequest,
@@ -23,46 +19,36 @@ function getRequiredRouteParam(
   return value;
 }
 
-export async function getEvent(
+export async function getMarkedAttendance(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
   const sectionId = getRequiredRouteParam(request, "sectionId");
+  const termId = getRequiredRouteParam(request, "termId");
   const eventId = getRequiredRouteParam(request, "eventId");
 
   context.log(
-    `Getting event "${eventId}" for section "${sectionId}".`,
+    `Getting marked attendance for event "${eventId}" in section "${sectionId}" term "${termId}".`,
   );
 
   const client = await OSMClient.create();
 
   try {
-    const event = await client.getEvent(sectionId, eventId);
+    const attendance = await client.getMarkedAttendance(
+      sectionId,
+      termId,
+      eventId,
+      {
+        mode: request.query.get("mode") ?? undefined,
+      },
+    );
 
     return {
       status: 200,
-      jsonBody: event,
+      jsonBody: attendance,
     };
-  } catch (error) {
-    if (error instanceof OsmRequestError) {
-      return {
-        status: error.status,
-        jsonBody: {
-          error: error.message,
-          details: error.body,
-        },
-      };
-    }
-
-    throw error;
   } finally {
     await client.close();
   }
 }
 
-app.http("get_event", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/events/{eventId}",
-  handler: getEvent,
-});

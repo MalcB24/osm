@@ -10,7 +10,6 @@ import {
 export interface LinkEventBadgeRequest {
   badgeId: Id;
   badgeVersion: Id;
-  // picture: string;
   columnId: Id;
   columnData: string;
   section?: string;

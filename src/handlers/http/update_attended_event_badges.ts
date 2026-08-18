@@ -1,5 +1,4 @@
 import {
-  app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
@@ -8,13 +7,13 @@ import {
 import {
   OSMClient,
   OsmRequestError,
-} from "../clients/osm_client.js";
+} from "../../clients/osm_client.js";
 import type {
   ActualAttendanceMember,
   EventBadgeLink,
   OsmEvent,
   OsmEventDetails,
-} from "../models/index.js";
+} from "../../models/index.js";
 
 interface UpdateAttendedEventBadgesRequest {
   date: string;
@@ -373,9 +372,3 @@ export async function updateAttendedEventBadges(
   }
 }
 
-app.http("update_attended_event_badges", {
-  methods: ["POST"],
-  authLevel: "anonymous",
-  route: "sections/{sectionId}/terms/{termId}/attended-event-badges",
-  handler: updateAttendedEventBadges,
-});
