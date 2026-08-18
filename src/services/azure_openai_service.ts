@@ -9,6 +9,7 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import {
   DefaultAzureCredential,
   getBearerTokenProvider,
+  ManagedIdentityCredential,
 } from "@azure/identity";
 
 export class AzureOpenAIService {
@@ -46,7 +47,7 @@ export class AzureOpenAIService {
     const scope =
       process.env.AZURE_OPENAI_SCOPE ?? "https://ai.azure.com/.default";
     const tokenProvider = getBearerTokenProvider(
-      new DefaultAzureCredential(),
+      process.env.NODE_ENV == "development" ? new DefaultAzureCredential() : new ManagedIdentityCredential(),
       scope,
     );
 
