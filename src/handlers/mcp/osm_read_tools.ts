@@ -1,5 +1,9 @@
 import type { InvocationContext } from "@azure/functions";
 
+import {
+  createActualAttendanceFilters,
+  getActualAttendanceResult,
+} from "../../services/actual_attendance_service.js";
 import { getSections } from "../../services/section_service.js";
 import {
   getOptionalToolString,
@@ -8,6 +12,62 @@ import {
   McpToolRequest,
   withOsmClient,
 } from "../../utils/mcp.js";
+
+export async function mcpGetActualAttendance(
+  toolRequest: McpToolRequest,
+  context: InvocationContext,
+): Promise<string> {
+  const args = getToolArguments(toolRequest);
+  const sectionId = getRequiredToolString(args, "sectionId");
+  const termId = getRequiredToolString(args, "termId");
+  const filters = createActualAttendanceFilters({
+    date:
+      getOptionalToolString(args, "date") ??
+      getOptionalToolString(args, "onDate"),
+    scoutId: getOptionalToolString(args, "scoutId"),
+    scoutIds: getOptionalToolString(args, "scoutIds"),
+    scoutName:
+      getOptionalToolString(args, "scoutName") ??
+      getOptionalToolString(args, "name"),
+    patrol: getOptionalToolString(args, "patrol"),
+  });
+
+  context.log(
+    `MCP getting actual attendance for section "${sectionId}" term "${termId}".`,
+  );
+
+  return withOsmClient(context, async (client) => {
+    const scouts = await client.getActualAttendance(
+      sectionId,
+      termId,
+      {
+        section: getOptionalToolString(args, "section"),
+      },
+    );
+
+    return getActualAttendanceResult(scouts, filters);
+  });
+}
+
+export async function mcpGetMarkedAttendance(
+  toolRequest: McpToolRequest,
+  context: InvocationContext,
+): Promise<string> {
+  const args = getToolArguments(toolRequest);
+  const sectionId = getRequiredToolString(args, "sectionId");
+  const termId = getRequiredToolString(args, "termId");
+  const eventId = getRequiredToolString(args, "eventId");
+
+  context.log(
+    `MCP getting marked attendance for event "${eventId}" in section "${sectionId}" term "${termId}".`,
+  );
+
+  return withOsmClient(context, (client) =>
+    client.getMarkedAttendance(sectionId, termId, eventId, {
+      mode: getOptionalToolString(args, "mode"),
+    }),
+  );
+}
 
 export async function mcpGetSections(
   _toolRequest: McpToolRequest,

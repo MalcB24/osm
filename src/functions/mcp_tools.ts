@@ -3,10 +3,12 @@ import azureFunctions from "@azure/functions";
 const { app, arg } = azureFunctions;
 
 import {
+  mcpGetActualAttendance,
   mcpGetAvailableBadges,
   mcpGetBadgeRequirements,
   mcpGetEvent,
   mcpGetEvents,
+  mcpGetMarkedAttendance,
   mcpGetScouts,
   mcpGetSections,
   mcpGetTerms,
@@ -68,6 +70,53 @@ app.mcpTool("osm_get_event", {
     eventId: arg.string().describe("OSM event id."),
   },
   handler: mcpGetEvent,
+});
+
+app.mcpTool("osm_get_marked_attendance", {
+  toolName: "osm_get_marked_attendance",
+  description:
+    "Get attendance marked against a specific OSM event.",
+  toolProperties: {
+    sectionId: arg.string().describe("OSM section id."),
+    termId: arg.string().describe("OSM term id."),
+    eventId: arg.string().describe("OSM event id."),
+    mode: arg.string().optional().describe("OSM attendance mode."),
+  },
+  handler: mcpGetMarkedAttendance,
+});
+
+app.mcpTool("osm_get_actual_attendance", {
+  toolName: "osm_get_actual_attendance",
+  description:
+    "Get the actual section attendance register grouped by date.",
+  toolProperties: {
+    sectionId: arg.string().describe("OSM section id."),
+    termId: arg.string().describe("OSM term id."),
+    date: arg
+      .string()
+      .optional()
+      .describe("Optional date filter in YYYY-MM-DD format."),
+    onDate: arg
+      .string()
+      .optional()
+      .describe("Alias for date, in YYYY-MM-DD format."),
+    scoutId: arg.string().optional().describe("Optional scout id."),
+    scoutIds: arg
+      .string()
+      .optional()
+      .describe("Optional comma-separated scout ids."),
+    scoutName: arg
+      .string()
+      .optional()
+      .describe("Optional scout name filter."),
+    name: arg
+      .string()
+      .optional()
+      .describe("Alias for scoutName."),
+    patrol: arg.string().optional().describe("Optional patrol filter."),
+    section: arg.string().optional().describe("OSM section slug."),
+  },
+  handler: mcpGetActualAttendance,
 });
 
 app.mcpTool("osm_get_available_badges", {
