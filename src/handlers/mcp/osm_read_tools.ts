@@ -1,4 +1,4 @@
-import { InvocationContext } from "@azure/functions";
+import type { InvocationContext } from "@azure/functions";
 
 import {
   getOptionalToolString,

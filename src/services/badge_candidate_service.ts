@@ -2,15 +2,23 @@ import type { OSMClient } from "../clients/osm_client.js";
 import type {
   BadgeCandidate,
   Id,
+  SuggestGodBadgesRequest,
   SuggestEventBadgesRequest,
 } from "../models/index.js";
 import { isRecord } from "../utils/validation.js";
+
+interface AvailableBadgeCandidate {
+  badgeId: Id;
+  badgeVersion: Id;
+  name: string;
+  groupName?: string;
+}
 
 export async function loadBadgeCandidates(
   client: OSMClient,
   sectionId: string,
   termId: string,
-  body: SuggestEventBadgesRequest,
+  body: SuggestEventBadgesRequest | SuggestGodBadgesRequest,
 ): Promise<BadgeCandidate[]> {
   const rawBadges = (await client.getAvailableBadges(sectionId, {
     section: body.section,
@@ -49,10 +57,10 @@ export async function loadBadgeCandidates(
 
 function normalizeAvailableBadges(
   rawBadges: unknown,
-): Array<{ badgeId: Id; badgeVersion: Id; name: string }> {
+): AvailableBadgeCandidate[] {
   return collectArrayValues(rawBadges)
     .filter(isRecord)
-    .map((badge) => {
+    .map((badge): AvailableBadgeCandidate | undefined => {
       const badgeId = getIdField(badge, ["badge_id", "badgeId", "id"]);
       const badgeVersion = getIdField(badge, [
         "badge_version",
@@ -65,6 +73,12 @@ function normalizeAvailableBadges(
           : typeof badge.badgeLongName === "string"
             ? badge.badgeLongName
             : `Badge ${String(badgeId)}`;
+      const groupName =
+        typeof badge.group_name === "string"
+          ? badge.group_name
+          : typeof badge.badge_group === "string"
+            ? badge.badge_group
+            : undefined;
 
       if (badgeId === undefined || badgeVersion === undefined) {
         return undefined;
@@ -74,12 +88,11 @@ function normalizeAvailableBadges(
         badgeId,
         badgeVersion,
         name,
+        groupName,
       };
     })
     .filter(
-      (
-        badge,
-      ): badge is { badgeId: Id; badgeVersion: Id; name: string } =>
+      (badge): badge is AvailableBadgeCandidate =>
         badge !== undefined,
     );
 }

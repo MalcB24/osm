@@ -1,11 +1,15 @@
-import { InvocationContext } from "@azure/functions";
+import type { InvocationContext } from "@azure/functions";
 
 import type {
   CreateEventBadgeLinkRequest,
+  SuggestGodBadgesRequest,
   SuggestEventBadgesRequest,
 } from "../../models/index.js";
 import { AzureOpenAIService } from "../../services/azure_openai_service.js";
-import { createEventBadgeSuggestions } from "../../services/event_badge_suggestion_service.js";
+import {
+  createEventBadgeSuggestions,
+  createGodBadgeSuggestion,
+} from "../../services/event_badge_suggestion_service.js";
 import {
   getOptionalToolString,
   getRequiredToolString,
@@ -89,5 +93,32 @@ export async function mcpLinkEventBadge(
 
   return withOsmClient(context, (client) =>
     client.linkBadgeToEvent(link),
+  );
+}
+
+export async function mcpSuggestGodBadges(
+  toolRequest: McpToolRequest,
+  context: InvocationContext,
+): Promise<string> {
+  const args = getToolArguments(toolRequest);
+  const sectionId = getRequiredToolString(args, "sectionId");
+  const termId = getRequiredToolString(args, "termId");
+  const body: SuggestGodBadgesRequest = {
+    description: getRequiredToolString(args, "description"),
+    name: getOptionalToolString(args, "name"),
+    section: getOptionalToolString(args, "section"),
+    typeId: getOptionalToolString(args, "typeId"),
+    payload: getOptionalToolString(args, "payload"),
+    context: getOptionalToolString(args, "context"),
+    memberId: getOptionalToolString(args, "memberId"),
+  };
+  const ai = await AzureOpenAIService.create();
+
+  context.log(
+    `MCP suggesting god badge matches for section "${sectionId}" term "${termId}".`,
+  );
+
+  return withOsmClient(context, (client) =>
+    createGodBadgeSuggestion(client, ai, sectionId, termId, body),
   );
 }

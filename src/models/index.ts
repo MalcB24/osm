@@ -39,6 +39,8 @@ export type {
 export type {
   BadgeCandidate,
   BadgeMatchResponse,
+  SuggestedDescriptionBadgesResponse,
   SuggestedEventBadgesResponse,
+  SuggestGodBadgesRequest,
   SuggestEventBadgesRequest,
 } from "./event_badge_suggestion.js";

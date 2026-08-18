@@ -1,3 +1,6 @@
 node_modules
 dist
 .DS_Store
+__azurite_**
+__blobstorage__/*
+__queuestorage__/*

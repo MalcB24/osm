@@ -1,4 +1,6 @@
-import { app } from "@azure/functions";
+import azureFunctions from "@azure/functions";
+
+const { app } = azureFunctions;
 
 import { getActualAttendance } from "../handlers/http/get_actual_attendance.js";
 import { getAvailableBadges } from "../handlers/http/get_available_badges.js";
@@ -15,6 +17,7 @@ import {
   startOsmAuth,
 } from "../handlers/http/osm_auth.js";
 import { suggestEventBadges } from "../handlers/http/suggest_event_badges.js";
+import { suggestGodBadges } from "../handlers/http/suggest_god_badges.js";
 import { updateAttendedEventBadges } from "../handlers/http/update_attended_event_badges.js";
 import { updateBadgeRecords } from "../handlers/http/update_badge_records.js";
 
@@ -116,6 +119,13 @@ app.http("suggest_event_badges", {
   authLevel: "anonymous",
   route: "sections/{sectionId}/terms/{termId}/event-badge-suggestions",
   handler: suggestEventBadges,
+});
+
+app.http("suggest_god_badges", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "sections/{sectionId}/terms/{termId}/god-badge-suggestions",
+  handler: suggestGodBadges,
 });
 
 app.http("link_event_badge", {

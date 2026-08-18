@@ -11,10 +11,21 @@ export interface SuggestEventBadgesRequest {
   memberId?: Id;
 }
 
+export interface SuggestGodBadgesRequest {
+  description: string;
+  name?: string;
+  section?: string;
+  typeId?: Id;
+  payload?: Id;
+  context?: string;
+  memberId?: Id;
+}
+
 export interface BadgeCandidate {
   badgeId: Id;
   badgeVersion: Id;
   name: string;
+  groupName?: string;
   requirements: BadgeRequirement[];
 }
 
@@ -50,4 +61,10 @@ export interface SuggestedEventBadgesResponse {
       }>;
     }
   >;
+}
+
+export interface SuggestedDescriptionBadgesResponse {
+  name: string;
+  description: string;
+  possibleBadges: SuggestedEventBadgesResponse["possibleBadges"];
 }

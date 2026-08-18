@@ -1,4 +1,6 @@
-import { app, arg } from "@azure/functions";
+import azureFunctions from "@azure/functions";
+
+const { app, arg } = azureFunctions;
 
 import {
   mcpGetAvailableBadges,
@@ -11,6 +13,7 @@ import {
 import {
   mcpLinkEventBadge,
   mcpSuggestEventBadges,
+  mcpSuggestGodBadges,
 } from "../handlers/mcp/event_badge_tools.js";
 
 app.mcpTool("osm_get_scouts", {
@@ -109,6 +112,29 @@ app.mcpTool("osm_suggest_event_badges", {
     memberId: arg.string().optional().describe("OSM member id."),
   },
   handler: mcpSuggestEventBadges,
+});
+
+app.mcpTool("osm_suggest_god_badges", {
+  toolName: "osm_suggest_god_badges",
+  description:
+    "Suggest Olympian Missions god badge requirements that fit a manually supplied description.",
+  toolProperties: {
+    sectionId: arg.string().describe("OSM section id."),
+    termId: arg.string().describe("OSM term id."),
+    description: arg
+      .string()
+      .describe("Manual event or activity description to match."),
+    name: arg
+      .string()
+      .optional()
+      .describe("Optional name for the supplied description."),
+    section: arg.string().optional().describe("OSM section slug."),
+    typeId: arg.string().optional().describe("OSM badge type id."),
+    payload: arg.string().optional().describe("OSM payload value."),
+    context: arg.string().optional().describe("OSM badge context."),
+    memberId: arg.string().optional().describe("OSM member id."),
+  },
+  handler: mcpSuggestGodBadges,
 });
 
 app.mcpTool("osm_link_event_badge", {
