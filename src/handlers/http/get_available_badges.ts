@@ -6,8 +6,6 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import { OSMClient } from "../../clients/osm_client.js";
-
 function getRequiredRouteParam(
   request: HttpRequest,
   name: string,
@@ -50,4 +48,3 @@ export async function getAvailableBadges(
     await client.close();
   }
 }
-

@@ -1,6 +1,4 @@
 export type { Id } from "./id.js";
-export type { AzureSdkError } from "./azure_sdk_error.js";
-export type { OAuthToken } from "./oauth_token.js";
 export type {
   OsmSection,
   OsmTerm,

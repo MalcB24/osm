@@ -6,7 +6,6 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import { OSMClient } from "../../clients/osm_client.js";
 import { getSections } from "../../services/section_service.js";
 
 export async function getSection(

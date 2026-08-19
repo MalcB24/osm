@@ -6,7 +6,6 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import { OSMClient } from "../../clients/osm_client.js";
 import type { OsmEvent } from "../../models/index.js";
 
 interface EventFilters {
@@ -215,4 +214,3 @@ export async function getEvents(
     await client.close();
   }
 }
-

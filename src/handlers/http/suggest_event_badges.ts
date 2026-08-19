@@ -6,10 +6,7 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import {
-  OSMClient,
-  OsmRequestError,
-} from "../../clients/osm_client.js";
+import { OsmRequestError } from "../../clients/osm_client.js";
 import type { SuggestEventBadgesRequest } from "../../models/index.js";
 import { parseSuggestEventBadgesRequest } from "../../requests/suggest_event_badges_request.js";
 import { AzureOpenAIService } from "../../services/azure_openai_service.js";
@@ -88,4 +85,3 @@ export async function suggestEventBadges(
     await client.close();
   }
 }
-

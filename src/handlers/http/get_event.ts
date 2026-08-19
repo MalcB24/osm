@@ -6,10 +6,7 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import {
-  OSMClient,
-  OsmRequestError,
-} from "../../clients/osm_client.js";
+import { OsmRequestError } from "../../clients/osm_client.js";
 
 function getRequiredRouteParam(
   request: HttpRequest,
@@ -60,4 +57,3 @@ export async function getEvent(
     await client.close();
   }
 }
-

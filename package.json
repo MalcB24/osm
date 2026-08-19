@@ -16,7 +16,6 @@
   "dependencies": {
     "@azure/functions": "^4.0.0",
     "@azure/identity": "^4.13.1",
-    "@azure/keyvault-secrets": "^4.11.2",
     "openai": "^4.104.0"
   },
   "devDependencies": {

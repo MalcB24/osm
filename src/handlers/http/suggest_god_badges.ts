@@ -6,10 +6,7 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import {
-  OSMClient,
-  OsmRequestError,
-} from "../../clients/osm_client.js";
+import { OsmRequestError } from "../../clients/osm_client.js";
 import type { SuggestGodBadgesRequest } from "../../models/index.js";
 import { parseSuggestGodBadgesRequest } from "../../requests/suggest_god_badges_request.js";
 import { AzureOpenAIService } from "../../services/azure_openai_service.js";

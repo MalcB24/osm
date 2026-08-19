@@ -6,10 +6,7 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import {
-  OSMClient,
-  OsmRequestError,
-} from "../../clients/osm_client.js";
+import { OsmRequestError } from "../../clients/osm_client.js";
 import type {
   MultipleBadgeRecordUpdate,
   SingleBadgeRecordUpdate,
@@ -302,4 +299,3 @@ export async function updateBadgeRecords(
     await client.close();
   }
 }
-

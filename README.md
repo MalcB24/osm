@@ -1,23 +1,34 @@
 # OSM Functions API and MCP Tools
 
-Azure Functions app for working with Online Scout Manager (OSM). It exposes the same core OSM logic through HTTP endpoints and MCP tools, so regular API calls and agent/tool calls stay consistent.
+Azure Functions app for working with Online Scout Manager (OSM). It exposes the same core OSM logic through HTTP endpoints and MCP tools, with authorization based on the OSM user connected by the caller.
 
 ## What It Does
 
-- Starts and completes OSM OAuth, storing tokens in Azure Key Vault.
+- Proxies OAuth authorization and token exchange to OSM for ChatGPT, Postman, and other OAuth clients.
+- Advertises OAuth metadata with PKCE `S256` support for ChatGPT connector setup.
 - Reads sections, terms, scouts, events, badges, badge requirements, and attendance.
 - Links badge requirements to events.
 - Updates badge records from JSON API requests.
 - Suggests badge requirement matches using Azure OpenAI.
 - Exposes MCP tools for agents, including a `get_today` helper so agents do not guess the current date.
 
+## Auth Model
+
+The app does not store an OSM access token, refresh token, client ID, or client secret.
+
+Each caller authenticates with OSM through the app OAuth endpoints. The resulting OSM bearer token is then sent back to this app on HTTP and MCP calls:
+
+- HTTP requests use `Authorization: Bearer <osm-access-token>`.
+- ChatGPT MCP requests pass the bearer token in the MCP transport headers.
+- Missing HTTP bearer tokens return `401` JSON instead of an unhandled function error.
+
+The app OAuth endpoints are a small compatibility layer in front of OSM OAuth. They exist so ChatGPT can discover `code_challenge_methods_supported: ["S256"]` and so the same app URL can be used as the connector authorization server.
+
 ## Requirements
 
 - Node.js
 - Azure Functions Core Tools v4
-- Access to an Azure Key Vault
-- Azure identity access for Key Vault secrets
-- OSM OAuth app credentials
+- OSM OAuth application credentials, configured in the OAuth client such as ChatGPT or Postman
 - Azure OpenAI / Azure AI Foundry deployment for suggestion tools
 
 ## Setup
@@ -36,21 +47,23 @@ Create or update `local.settings.json` with these values:
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AZURE_KEY_VAULT_NAME": "<key-vault-name>",
-    "OSM_REDIRECT_URI": "https://localhost:7071/api/osm/auth/callback",
     "AZURE_OPENAI_ENDPOINT": "<azure-openai-or-foundry-endpoint>",
     "AZURE_OPENAI_DEPLOYMENT": "<deployment-name>",
-    "AZURE_OPENAI_API_VERSION": "v1"
+    "AZURE_OPENAI_API_VERSION": "v1",
+    "NODE_ENV": "development"
   }
 }
 ```
 
-Required Key Vault secrets:
+Optional OAuth metadata overrides for deployed or proxied environments:
 
-- `osm-client-id`
-- `osm-client-secret`
-- `osm-token` after OAuth completes
-- `osm-oauth-state` is written during OAuth
+| Setting | Purpose |
+| --- | --- |
+| `CHATGPT_AUTH_BASE_URL` | Public base URL used in OAuth metadata, for example `https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net` |
+| `CHATGPT_AUTH_RESOURCE_URL` | Resource value advertised in protected-resource metadata |
+| `CHATGPT_AUTH_ISSUER` | Issuer value advertised in OAuth metadata |
+
+Do not put OSM client credentials or requested OSM scopes in app settings. Configure those in the OAuth client.
 
 ## Running Locally
 
@@ -78,23 +91,70 @@ If functions are not loading, run a clean build:
 npm run clean && npm run build
 ```
 
-## First-Time OSM Auth
+## ChatGPT Connector Setup
 
-1. Start the function app.
-2. Open:
-
-```text
-https://localhost:7071/api/osm/auth
-```
-
-3. Follow the OSM authorization URL.
-4. OSM redirects to:
+For the deployed app:
 
 ```text
-https://localhost:7071/api/osm/auth/callback
+https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net
 ```
 
-5. The callback exchanges the authorization code and stores the token in Key Vault as `osm-token`.
+Use these values in the ChatGPT connector configuration:
+
+| Field | Value |
+| --- | --- |
+| MCP server URL | `https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net/runtime/webhooks/mcp` |
+| OAuth Client ID | Your OSM OAuth app client ID |
+| OAuth Client Secret | Your OSM OAuth app client secret |
+| Token endpoint auth method | `client_secret_post` |
+| Auth URL | `https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net/oauth/authorize` |
+| Token URL | `https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net/oauth/token` |
+| Registration URL | Leave blank unless ChatGPT requires one |
+| Authorization server base | `https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net` |
+| Resource | `https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net` |
+| OIDC configuration URL | `https://osm-tools-aphgfshtbgecdcfc.westeurope-01.azurewebsites.net/.well-known/openid-configuration` |
+| OIDC userinfo endpoint | `https://osm.scouts.mt/oauth/resource` |
+
+Default read scopes:
+
+```text
+section:member:read section:event:read section:badge:read section:attendance:read
+```
+
+Add write scopes only when the connector needs write tools:
+
+```text
+section:member:write section:event:write section:badge:write section:attendance:write
+```
+
+OSM requires the OAuth client credentials during the token request. In ChatGPT, this means the token endpoint auth method should send the client ID and client secret to `/oauth/token`; `client_secret_post` is the safest choice for this app.
+
+## Postman OAuth Setup
+
+Use Authorization Code with PKCE:
+
+| Field | Value |
+| --- | --- |
+| Auth URL | `https://<your-app-host>/oauth/authorize` |
+| Access Token URL | `https://<your-app-host>/oauth/token` |
+| Client ID | Your OSM OAuth app client ID |
+| Client Secret | Your OSM OAuth app client secret |
+| Code challenge method | `S256` |
+| Scope | Space-separated OSM scopes |
+
+The redirect/callback URL used by Postman or ChatGPT must also be registered in the OSM OAuth app.
+
+## OAuth Endpoints
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/.well-known/oauth-protected-resource` | Protected resource metadata |
+| GET | `/.well-known/oauth-authorization-server` | OAuth authorization server metadata |
+| GET | `/.well-known/openid-configuration` | OpenID-style metadata for OAuth clients |
+| GET | `/oauth/authorize` | Redirects authorization requests to OSM |
+| POST | `/oauth/token` | Exchanges or refreshes tokens with OSM |
+
+The adapter intentionally does not forward a `resource` query parameter to OSM. OSM authorizes by scopes, and forwarding `resource` can cause provider-side target mismatch errors.
 
 ## HTTP Endpoints
 
@@ -104,12 +164,16 @@ Base URL locally:
 https://localhost:7071/api
 ```
 
+All HTTP API routes require:
+
+```text
+Authorization: Bearer <osm-access-token>
+```
+
 Read endpoints:
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| GET | `/osm/auth` | Start OSM OAuth |
-| GET | `/osm/auth/callback` | Complete OSM OAuth |
 | GET | `/sections` | Get available OSM sections |
 | GET | `/sections/{sectionId}/terms` | Get terms for a section |
 | GET | `/sections/{sectionId}/terms/{termId}/scouts` | Get scouts |

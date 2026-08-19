@@ -13,7 +13,6 @@ import type {
   MarkedAttendance,
   MarkedAttendanceResponse,
   MembersResponse,
-  OAuthToken,
   OsmEvent,
   OsmEventDetails,
   OsmMember,
@@ -22,9 +21,7 @@ import type {
   SectionTermsResponse,
   SingleBadgeRecordUpdate,
 } from "../models/index.js";
-import { KeyVaultService } from "../services/key_vault_service.js";
 
-const tokenUrl = "https://osm.scouts.mt/oauth/token";
 const resourceUrl = "https://osm.scouts.mt/oauth/resource";
 
 export class OsmRequestError extends Error {
@@ -46,35 +43,16 @@ function getOsmLogicalStatusCode(
 }
 
 export class OSMClient {
-  private clientId = "";
-  private clientSecret = "";
-  private token!: OAuthToken;
-
-  private keyVault?: KeyVaultService;
+  private accessToken = "";
 
   private constructor() {}
-
-  static async create(): Promise<OSMClient> {
-    const client = new OSMClient();
-
-    await client.getOsmClientAzure();
-
-    if (!(await client.checkResourceAccess())) {
-      await client.close();
-      throw new Error("Unable to access OSM resource.");
-    }
-
-    return client;
-  }
 
   static async createWithAccessToken(
     accessToken: string,
   ): Promise<OSMClient> {
     const client = new OSMClient();
 
-    client.token = {
-      access_token: accessToken,
-    };
+    client.accessToken = accessToken;
 
     if (!(await client.checkResourceAccess())) {
       await client.close();
@@ -131,154 +109,21 @@ export class OSMClient {
     console.log(await r.text());
   }
 
-  /**
-   * Load OSM credentials and the OAuth token from Azure Key Vault.
-   *
-   * Required secrets:
-   *   osm-client-id
-   *   osm-client-secret
-   *   osm-token
-   *
-   * Function Apps cannot complete an interactive OAuth flow, so the token
-   * must be provisioned before this client is used.
-   */
-  private async getOsmClientAzure(): Promise<void> {
-    this.keyVault = new KeyVaultService();
-
-    const { clientId, clientSecret } =
-      await this.keyVault.getOsmCredentials();
-
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-    this.token = await this.keyVault.getOsmToken();
-
-    await this.ensureValidToken();
-  }
-
-  /**
-   * Save the current OAuth token directly to Azure Key Vault.
-   *
-   * This is the only token persistence mechanism used by this class.
-   * No token.json or other local file is created.
-   */
-  private async saveToken(): Promise<void> {
-    if (!this.keyVault) {
-      return;
-    }
-
-    await this.keyVault.saveOsmToken(this.token);
-  }
-
-  private normalizeToken(token: OAuthToken): OAuthToken {
-    if (
-      token.expires_in !== undefined &&
-      token.expires_at === undefined
-    ) {
-      token.expires_at =
-        Math.floor(Date.now() / 1000) +
-        Number(token.expires_in);
-    }
-
-    return token;
-  }
-
-  private tokenIsExpired(): boolean {
-    if (!this.token.expires_at) {
-      return false;
-    }
-
-    // Refresh slightly early to avoid expiry during an API request.
-    return Date.now() / 1000 >= this.token.expires_at - 30;
-  }
-
-  private async ensureValidToken(): Promise<void> {
-    if (!this.tokenIsExpired()) {
-      return;
-    }
-
-    if (!this.token.refresh_token) {
-      throw new Error(
-        "OAuth token has expired and no refresh token is available.",
-      );
-    }
-
-    await this.refreshAccessToken();
-  }
-
-  private async refreshAccessToken(): Promise<void> {
-    if (!this.token.refresh_token) {
-      throw new Error("No refresh token available.");
-    }
-
-    const previousRefreshToken = this.token.refresh_token;
-
-    const body = new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: previousRefreshToken,
-      client_id: this.clientId,
-      client_secret: this.clientSecret,
-    });
-
-    const response = await fetch(tokenUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body,
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Token refresh failed: ${response.status} ${await response.text()}`,
-      );
-    }
-
-    const refreshedToken = this.normalizeToken(
-      (await response.json()) as OAuthToken,
-    );
-
-    // OAuth servers do not always return a new refresh token.
-    if (!refreshedToken.refresh_token) {
-      refreshedToken.refresh_token = previousRefreshToken;
-    }
-
-    this.token = refreshedToken;
-
-    await this.saveToken();
-  }
-
   private async request(
     url: string | URL,
     init: RequestInit = {},
-    allowRetry = true,
   ): Promise<Response> {
-    await this.ensureValidToken();
-
     const headers = new Headers(init.headers);
 
     headers.set(
       "Authorization",
-      `Bearer ${this.token.access_token}`,
+      `Bearer ${this.accessToken}`,
     );
 
-    const response = await fetch(url, {
+    return fetch(url, {
       ...init,
       headers,
     });
-
-    if (response.status === 401 && allowRetry) {
-      if (this.token.refresh_token) {
-        await this.refreshAccessToken();
-      } else {
-        throw new Error(
-          "OSM request was unauthorized and no refresh token is available.",
-        );
-      }
-
-      return this.request(url, init, false);
-    }
-
-    return response;
   }
 
   private async get(

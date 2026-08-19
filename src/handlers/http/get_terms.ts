@@ -6,10 +6,7 @@ import {
 
 import { createOsmClientForRequest } from "../../utils/http.js";
 
-import {
-  OSMClient,
-  OsmRequestError,
-} from "../../clients/osm_client.js";
+import { OsmRequestError } from "../../clients/osm_client.js";
 import type { SectionTerm } from "../../models/index.js";
 
 interface TermFilters {
@@ -164,4 +161,3 @@ export async function getTerms(
     await client.close();
   }
 }
-
