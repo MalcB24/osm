@@ -4,8 +4,6 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
-import { KeyVaultService } from "../../services/key_vault_service.js";
-
 const authorizationBaseUrl = "https://osm.scouts.mt/oauth/authorize";
 const tokenUrl = "https://osm.scouts.mt/oauth/token";
 const resourceUrl = "https://osm.scouts.mt/oauth/resource";
@@ -170,7 +168,16 @@ export async function startAuthorization(
 ): Promise<HttpResponseInit> {
   context.log("Redirecting app OAuth authorization to OSM.");
 
-  const { clientId } = await new KeyVaultService().getOsmCredentials();
+  const clientId = request.query.get("client_id");
+
+  if (!clientId) {
+    return oauthError(
+      400,
+      "invalid_request",
+      "Missing OAuth client id.",
+    );
+  }
+
   const authorizationUrl = new URL(authorizationBaseUrl);
 
   authorizationUrl.searchParams.set("client_id", clientId);
@@ -215,23 +222,29 @@ export async function exchangeToken(
   }
 
   const tokenForm = new URLSearchParams();
-  const { clientId, clientSecret } = await new KeyVaultService()
-    .getOsmCredentials();
-
-  tokenForm.set("client_id", clientId);
+  const clientId = form.get("client_id");
 
   const incomingClientSecret = form.get("client_secret") ??
     getBasicAuthClientSecret(request);
 
-  if (incomingClientSecret && incomingClientSecret !== clientSecret) {
+  if (!clientId) {
     return oauthError(
-      401,
-      "invalid_client",
-      "The OAuth client secret is invalid.",
+      400,
+      "invalid_request",
+      "Missing OAuth client id.",
     );
   }
 
-  tokenForm.set("client_secret", clientSecret);
+  if (!incomingClientSecret) {
+    return oauthError(
+      401,
+      "invalid_client",
+      "Missing OAuth client secret.",
+    );
+  }
+
+  tokenForm.set("client_id", clientId);
+  tokenForm.set("client_secret", incomingClientSecret);
 
   for (const name of [
     "grant_type",

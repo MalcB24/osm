@@ -19,29 +19,11 @@ import {
   getProtectedResourceMetadata,
   startAuthorization,
 } from "../handlers/http/app_auth.js";
-import {
-  completeOsmAuth,
-  startOsmAuth,
-} from "../handlers/http/osm_auth.js";
 import { suggestEventBadges } from "../handlers/http/suggest_event_badges.js";
 import { suggestGodBadges } from "../handlers/http/suggest_god_badges.js";
 import { updateAttendedEventBadges } from "../handlers/http/update_attended_event_badges.js";
 import { updateBadgeRecords } from "../handlers/http/update_badge_records.js";
 import { withHttpErrors } from "../utils/http.js";
-
-app.http("osm_auth", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "api/osm/auth",
-  handler: startOsmAuth,
-});
-
-app.http("osm_auth_callback", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  route: "api/osm/auth/callback",
-  handler: completeOsmAuth,
-});
 
 app.http("oauth_protected_resource_metadata", {
   methods: ["GET"],

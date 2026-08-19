@@ -49,13 +49,10 @@ export class OSMClient {
   private clientId = "";
   private clientSecret = "";
   private token!: OAuthToken;
-  private saveTokenToKeyVault = true;
 
-  private readonly keyVault: KeyVaultService;
+  private keyVault?: KeyVaultService;
 
-  private constructor() {
-    this.keyVault = new KeyVaultService();
-  }
+  private constructor() {}
 
   static async create(): Promise<OSMClient> {
     const client = new OSMClient();
@@ -75,7 +72,6 @@ export class OSMClient {
   ): Promise<OSMClient> {
     const client = new OSMClient();
 
-    client.saveTokenToKeyVault = false;
     client.token = {
       access_token: accessToken,
     };
@@ -147,6 +143,8 @@ export class OSMClient {
    * must be provisioned before this client is used.
    */
   private async getOsmClientAzure(): Promise<void> {
+    this.keyVault = new KeyVaultService();
+
     const { clientId, clientSecret } =
       await this.keyVault.getOsmCredentials();
 
@@ -164,7 +162,7 @@ export class OSMClient {
    * No token.json or other local file is created.
    */
   private async saveToken(): Promise<void> {
-    if (!this.saveTokenToKeyVault) {
+    if (!this.keyVault) {
       return;
     }
 
