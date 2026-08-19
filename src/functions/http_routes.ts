@@ -4,6 +4,8 @@ const { app } = azureFunctions;
 
 import { getActualAttendance } from "../handlers/http/get_actual_attendance.js";
 import { getAvailableBadges } from "../handlers/http/get_available_badges.js";
+import { getBadgesByMember } from "../handlers/http/get_badges_by_member.js";
+import { getBadgeProgress } from "../handlers/http/get_badge_progress.js";
 import { getBadgeRequirements } from "../handlers/http/get_badge_requirements.js";
 import { getEvent } from "../handlers/http/get_event.js";
 import { getEvents } from "../handlers/http/get_events.js";
@@ -131,12 +133,27 @@ app.http("get_available_badges", {
   handler: withHttpErrors(getAvailableBadges),
 });
 
+app.http("get_badges_by_member", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "api/sections/{sectionId}/terms/{termId}/badges-by-person",
+  handler: withHttpErrors(getBadgesByMember),
+});
+
 app.http("get_badge_requirements", {
   methods: ["GET"],
   authLevel: "anonymous",
   route:
     "api/sections/{sectionId}/terms/{termId}/badges/{badgeId}/versions/{badgeVersion}/requirements",
   handler: withHttpErrors(getBadgeRequirements),
+});
+
+app.http("get_badge_progress", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route:
+    "api/sections/{sectionId}/terms/{termId}/badges/{badgeId}/versions/{badgeVersion}/progress",
+  handler: withHttpErrors(getBadgeProgress),
 });
 
 app.http("update_badge_records", {

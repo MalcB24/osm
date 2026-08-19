@@ -5,6 +5,8 @@ const { app, arg } = azureFunctions;
 import {
   mcpGetActualAttendance,
   mcpGetAvailableBadges,
+  mcpGetBadgesByMember,
+  mcpGetBadgeProgress,
   mcpGetBadgeRequirements,
   mcpGetEvent,
   mcpGetEvents,
@@ -147,6 +149,18 @@ app.mcpTool("osm_get_available_badges", {
   handler: mcpGetAvailableBadges,
 });
 
+app.mcpTool("osm_get_badges_by_person", {
+  toolName: "osm_get_badges_by_person",
+  description:
+    "Get all badges grouped by scout/member for an OSM section and term.",
+  toolProperties: {
+    sectionId: arg.string().describe("OSM section id."),
+    termId: arg.string().describe("OSM term id."),
+    section: arg.string().optional().describe("OSM section slug."),
+  },
+  handler: mcpGetBadgesByMember,
+});
+
 app.mcpTool("osm_get_badge_requirements", {
   toolName: "osm_get_badge_requirements",
   description: "Get requirements for an OSM badge.",
@@ -160,6 +174,22 @@ app.mcpTool("osm_get_badge_requirements", {
     typeId: arg.string().optional().describe("OSM badge type id."),
   },
   handler: mcpGetBadgeRequirements,
+});
+
+app.mcpTool("osm_get_badge_progress", {
+  toolName: "osm_get_badge_progress",
+  description:
+    "Get progress per scout for each requirement in an OSM badge.",
+  toolProperties: {
+    sectionId: arg.string().describe("OSM section id."),
+    termId: arg.string().describe("OSM term id."),
+    badgeId: arg.string().describe("Badge id."),
+    badgeVersion: arg.string().describe("Badge version."),
+    section: arg.string().optional().describe("OSM section slug."),
+    payload: arg.string().optional().describe("OSM payload value."),
+    typeId: arg.string().optional().describe("OSM badge type id."),
+  },
+  handler: mcpGetBadgeProgress,
 });
 
 app.mcpTool("osm_suggest_event_badges", {

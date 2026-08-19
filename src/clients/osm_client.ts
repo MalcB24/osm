@@ -1,6 +1,9 @@
 import type {
   AvailableBadgesResponse,
+  BadgesByMember,
+  BadgesByMemberResponse,
   BadgeRecordsResponse,
+  BadgeRecordsData,
   BadgeRecordUpdateResponse,
   BadgeRequirement,
   CreateEventBadgeLinkRequest,
@@ -464,6 +467,28 @@ export class OSMClient {
       typeId?: Id;
     } = {},
   ): Promise<BadgeRequirement[]> {
+    return (
+      await this.getBadgeRecords(
+        sectionId,
+        termId,
+        badgeId,
+        badgeVersion,
+        options,
+      )
+    ).requirements ?? [];
+  }
+
+  async getBadgeRecords(
+    sectionId: Id,
+    termId: Id,
+    badgeId: Id,
+    badgeVersion: Id,
+    options: {
+      section?: string;
+      payload?: Id;
+      typeId?: Id;
+    } = {},
+  ): Promise<BadgeRecordsData> {
     const r = await this.get(
       "https://osm.scouts.mt/ext/badges/records/",
       {
@@ -478,13 +503,65 @@ export class OSMClient {
       },
     );
 
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Badge records request failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
     const data = (await r.json()) as BadgeRecordsResponse;
 
     if (!data.status) {
-      throw new Error(data.error ?? "Unable to get badge records.");
+      const body = JSON.stringify(data);
+
+      throw new OsmRequestError(
+        `Badge records request failed: ${body}`,
+        getOsmLogicalStatusCode(data),
+        body,
+      );
     }
 
-    return data.data.requirements ?? [];
+    return data.data;
+  }
+
+  async getBadgesByMember(
+    sectionId: Id,
+    termId: Id,
+    options: {
+      section?: string;
+    } = {},
+  ): Promise<BadgesByMember[]> {
+    const r = await this.get(
+      "https://osm.scouts.mt/ext/badges/badgesbyperson/",
+      {
+        action: "loadBadgesByMember",
+        section: options.section ?? "mtventures",
+        sectionid: sectionId,
+        term_id: termId,
+      },
+    );
+
+    if (!r.ok) {
+      const body = await r.text();
+
+      throw new OsmRequestError(
+        `Badges by member request failed: ${r.status} ${body}`,
+        r.status,
+        body,
+      );
+    }
+
+    const data = (await r.json()) as BadgesByMemberResponse;
+
+    if (!data.status) {
+      throw new Error(data.error ?? "Unable to get badges by member.");
+    }
+
+    return data.data ?? [];
   }
 
   async updateSingleBadgeRecord(

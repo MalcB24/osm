@@ -4,6 +4,7 @@ import {
   createActualAttendanceFilters,
   getActualAttendanceResult,
 } from "../../services/actual_attendance_service.js";
+import { getBadgeProgress } from "../../services/badge_progress_service.js";
 import { getSections } from "../../services/section_service.js";
 import {
   getOptionalToolString,
@@ -181,6 +182,25 @@ export async function mcpGetAvailableBadges(
   );
 }
 
+export async function mcpGetBadgesByMember(
+  toolRequest: McpToolRequest,
+  context: InvocationContext,
+): Promise<string> {
+  const args = getToolArguments(toolRequest);
+  const sectionId = getRequiredToolString(args, "sectionId");
+  const termId = getRequiredToolString(args, "termId");
+
+  context.log(
+    `MCP getting badges by member for section "${sectionId}" term "${termId}".`,
+  );
+
+  return withOsmClient(context, (client) =>
+    client.getBadgesByMember(sectionId, termId, {
+      section: getOptionalToolString(args, "section"),
+    }),
+  );
+}
+
 export async function mcpGetBadgeRequirements(
   toolRequest: McpToolRequest,
   context: InvocationContext,
@@ -208,4 +228,35 @@ export async function mcpGetBadgeRequirements(
       },
     ),
   );
+}
+
+export async function mcpGetBadgeProgress(
+  toolRequest: McpToolRequest,
+  context: InvocationContext,
+): Promise<string> {
+  const args = getToolArguments(toolRequest);
+  const sectionId = getRequiredToolString(args, "sectionId");
+  const termId = getRequiredToolString(args, "termId");
+  const badgeId = getRequiredToolString(args, "badgeId");
+  const badgeVersion = getRequiredToolString(args, "badgeVersion");
+
+  context.log(
+    `MCP getting progress for badge "${badgeId}" version "${badgeVersion}".`,
+  );
+
+  return withOsmClient(context, async (client) => {
+    const records = await client.getBadgeRecords(
+      sectionId,
+      termId,
+      badgeId,
+      badgeVersion,
+      {
+        section: getOptionalToolString(args, "section"),
+        payload: getOptionalToolString(args, "payload"),
+        typeId: getOptionalToolString(args, "typeId"),
+      },
+    );
+
+    return getBadgeProgress(records);
+  });
 }

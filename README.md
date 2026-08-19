@@ -182,7 +182,9 @@ Read endpoints:
 | GET | `/sections/{sectionId}/terms/{termId}/events/{eventId}/marked-attendance` | Get event marked attendance |
 | GET | `/sections/{sectionId}/terms/{termId}/actual-attendance` | Get actual attendance grouped by date |
 | GET | `/sections/{sectionId}/available-badges` | Get available badges |
+| GET | `/sections/{sectionId}/terms/{termId}/badges-by-person` | Get badges grouped by scout/member |
 | GET | `/sections/{sectionId}/terms/{termId}/badges/{badgeId}/versions/{badgeVersion}/requirements` | Get badge requirements |
+| GET | `/sections/{sectionId}/terms/{termId}/badges/{badgeId}/versions/{badgeVersion}/progress` | Get progress per scout for each badge requirement |
 
 Write / suggestion endpoints:
 
@@ -230,7 +232,9 @@ Read-only tools:
 | `osm_get_marked_attendance` | Get attendance marked against an event |
 | `osm_get_actual_attendance` | Get actual attendance grouped by date |
 | `osm_get_available_badges` | Get available badges |
+| `osm_get_badges_by_person` | Get badges grouped by scout/member |
 | `osm_get_badge_requirements` | Get badge requirements |
+| `osm_get_badge_progress` | Get progress per scout for each badge requirement |
 
 Suggestion tools:
 
