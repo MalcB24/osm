@@ -27,6 +27,7 @@ import { suggestEventBadges } from "../handlers/http/suggest_event_badges.js";
 import { suggestGodBadges } from "../handlers/http/suggest_god_badges.js";
 import { updateAttendedEventBadges } from "../handlers/http/update_attended_event_badges.js";
 import { updateBadgeRecords } from "../handlers/http/update_badge_records.js";
+import { withHttpErrors } from "../utils/http.js";
 
 app.http("osm_auth", {
   methods: ["GET"],
@@ -95,35 +96,35 @@ app.http("get_section", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "api/sections",
-  handler: getSection,
+  handler: withHttpErrors(getSection),
 });
 
 app.http("get_terms", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms",
-  handler: getTerms,
+  handler: withHttpErrors(getTerms),
 });
 
 app.http("get_scouts", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms/{termId}/scouts",
-  handler: getScouts,
+  handler: withHttpErrors(getScouts),
 });
 
 app.http("get_events", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms/{termId}/events",
-  handler: getEvents,
+  handler: withHttpErrors(getEvents),
 });
 
 app.http("get_event", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/events/{eventId}",
-  handler: getEvent,
+  handler: withHttpErrors(getEvent),
 });
 
 app.http("get_marked_attendance", {
@@ -131,21 +132,21 @@ app.http("get_marked_attendance", {
   authLevel: "anonymous",
   route:
     "api/sections/{sectionId}/terms/{termId}/events/{eventId}/marked-attendance",
-  handler: getMarkedAttendance,
+  handler: withHttpErrors(getMarkedAttendance),
 });
 
 app.http("get_actual_attendance", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms/{termId}/actual-attendance",
-  handler: getActualAttendance,
+  handler: withHttpErrors(getActualAttendance),
 });
 
 app.http("get_available_badges", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/available-badges",
-  handler: getAvailableBadges,
+  handler: withHttpErrors(getAvailableBadges),
 });
 
 app.http("get_badge_requirements", {
@@ -153,40 +154,40 @@ app.http("get_badge_requirements", {
   authLevel: "anonymous",
   route:
     "api/sections/{sectionId}/terms/{termId}/badges/{badgeId}/versions/{badgeVersion}/requirements",
-  handler: getBadgeRequirements,
+  handler: withHttpErrors(getBadgeRequirements),
 });
 
 app.http("update_badge_records", {
   methods: ["POST"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms/{termId}/badge-records",
-  handler: updateBadgeRecords,
+  handler: withHttpErrors(updateBadgeRecords),
 });
 
 app.http("update_attended_event_badges", {
   methods: ["POST"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms/{termId}/attended-event-badges",
-  handler: updateAttendedEventBadges,
+  handler: withHttpErrors(updateAttendedEventBadges),
 });
 
 app.http("suggest_event_badges", {
   methods: ["POST"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms/{termId}/event-badge-suggestions",
-  handler: suggestEventBadges,
+  handler: withHttpErrors(suggestEventBadges),
 });
 
 app.http("suggest_god_badges", {
   methods: ["POST"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/terms/{termId}/god-badge-suggestions",
-  handler: suggestGodBadges,
+  handler: withHttpErrors(suggestGodBadges),
 });
 
 app.http("link_event_badge", {
   methods: ["POST"],
   authLevel: "anonymous",
   route: "api/sections/{sectionId}/events/{eventId}/badges",
-  handler: linkEventBadge,
+  handler: withHttpErrors(linkEventBadge),
 });

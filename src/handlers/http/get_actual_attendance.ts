@@ -4,6 +4,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
+import { createOsmClientForRequest } from "../../utils/http.js";
+
 import {
   OSMClient,
   OsmRequestError,
@@ -68,7 +70,7 @@ export async function getActualAttendance(
     `Getting actual attendance for section "${sectionId}" term "${termId}".`,
   );
 
-  const client = await OSMClient.create();
+  const client = await createOsmClientForRequest(request);
 
   try {
     let scouts: ActualAttendanceMember[];

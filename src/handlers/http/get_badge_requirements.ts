@@ -4,6 +4,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
+import { createOsmClientForRequest } from "../../utils/http.js";
+
 import { OSMClient } from "../../clients/osm_client.js";
 
 function getRequiredRouteParam(
@@ -35,7 +37,7 @@ export async function getBadgeRequirements(
     `Getting requirements for badge "${badgeId}" version "${badgeVersion}" in section "${sectionId}" term "${termId}".`,
   );
 
-  const client = await OSMClient.create();
+  const client = await createOsmClientForRequest(request);
 
   try {
     const requirements = await client.getBadgeRequirements(

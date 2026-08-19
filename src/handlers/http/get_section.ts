@@ -4,6 +4,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
+import { createOsmClientForRequest } from "../../utils/http.js";
+
 import { OSMClient } from "../../clients/osm_client.js";
 import { getSections } from "../../services/section_service.js";
 
@@ -15,7 +17,7 @@ export async function getSection(
     `Getting OSM sections for request "${request.url}".`,
   );
 
-  const client = await OSMClient.create();
+  const client = await createOsmClientForRequest(request);
 
   try {
     return {

@@ -4,7 +4,17 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
-const defaultScope = "openid profile email offline_access";
+import { KeyVaultService } from "../../services/key_vault_service.js";
+
+const authorizationBaseUrl = "https://osm.scouts.mt/oauth/authorize";
+const tokenUrl = "https://osm.scouts.mt/oauth/token";
+const resourceUrl = "https://osm.scouts.mt/oauth/resource";
+const defaultScope = [
+  "section:member:read",
+  "section:event:write",
+  "section:badge:write",
+  "section:attendance:write",
+].join(" ");
 
 function getOrigin(request: HttpRequest): string {
   const url = new URL(request.url);
@@ -20,18 +30,6 @@ function getRequiredSetting(name: string): string {
   }
 
   return value;
-}
-
-function getTenantId(): string {
-  return getRequiredSetting("ENTRA_TENANT_ID");
-}
-
-function getClientId(): string {
-  return getRequiredSetting("ENTRA_CLIENT_ID");
-}
-
-function getClientSecret(): string | undefined {
-  return process.env.ENTRA_CLIENT_SECRET;
 }
 
 function getBasicAuthClientSecret(request: HttpRequest): string | undefined {
@@ -69,13 +67,8 @@ function getPublicAuthBaseUrl(request: HttpRequest): string {
   return process.env.CHATGPT_AUTH_BASE_URL ?? getOrigin(request);
 }
 
-function getEntraIssuer(): string {
-  return process.env.ENTRA_ISSUER ??
-    `https://login.microsoftonline.com/${getTenantId()}/v2.0`;
-}
-
-function getEntraBaseUrl(): string {
-  return `https://login.microsoftonline.com/${getTenantId()}/oauth2/v2.0`;
+function getIssuer(request: HttpRequest): string {
+  return process.env.CHATGPT_AUTH_ISSUER ?? getPublicAuthBaseUrl(request);
 }
 
 function getScopes(): string[] {
@@ -147,15 +140,12 @@ export async function getAuthorizationServerMetadata(
   const publicAuthBaseUrl = getPublicAuthBaseUrl(request);
 
   return jsonResponse({
-    issuer: getEntraIssuer(),
+    issuer: getIssuer(request),
     authorization_endpoint: `${publicAuthBaseUrl}/oauth/authorize`,
     token_endpoint: `${publicAuthBaseUrl}/oauth/token`,
-    jwks_uri: `https://login.microsoftonline.com/${getTenantId()}/discovery/v2.0/keys`,
-    userinfo_endpoint: "https://graph.microsoft.com/oidc/userinfo",
+    userinfo_endpoint: resourceUrl,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
-    subject_types_supported: ["pairwise"],
-    id_token_signing_alg_values_supported: ["RS256"],
     token_endpoint_auth_methods_supported: [
       "client_secret_post",
       "client_secret_basic",
@@ -178,11 +168,12 @@ export async function startAuthorization(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
-  context.log("Redirecting app OAuth authorization to Entra.");
+  context.log("Redirecting app OAuth authorization to OSM.");
 
-  const authorizationUrl = new URL(`${getEntraBaseUrl()}/authorize`);
+  const { clientId } = await new KeyVaultService().getOsmCredentials();
+  const authorizationUrl = new URL(authorizationBaseUrl);
 
-  authorizationUrl.searchParams.set("client_id", getClientId());
+  authorizationUrl.searchParams.set("client_id", clientId);
   authorizationUrl.searchParams.set("response_type", "code");
   authorizationUrl.searchParams.set("scope", getScope());
 
@@ -190,8 +181,13 @@ export async function startAuthorization(
   appendIfPresent(authorizationUrl.searchParams, request.query, "state");
   appendIfPresent(authorizationUrl.searchParams, request.query, "code_challenge");
   appendIfPresent(authorizationUrl.searchParams, request.query, "code_challenge_method");
-  appendIfPresent(authorizationUrl.searchParams, request.query, "prompt");
-  appendIfPresent(authorizationUrl.searchParams, request.query, "login_hint");
+
+  if (
+    authorizationUrl.searchParams.has("code_challenge") &&
+    !authorizationUrl.searchParams.has("code_challenge_method")
+  ) {
+    authorizationUrl.searchParams.set("code_challenge_method", "S256");
+  }
 
   return {
     status: 302,
@@ -205,7 +201,7 @@ export async function exchangeToken(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
-  context.log("Exchanging app OAuth token with Entra.");
+  context.log("Exchanging app OAuth token with OSM.");
 
   const form = new URLSearchParams(await request.text());
   const grantType = form.get("grant_type");
@@ -218,17 +214,24 @@ export async function exchangeToken(
     );
   }
 
-  const entraForm = new URLSearchParams();
+  const tokenForm = new URLSearchParams();
+  const { clientId, clientSecret } = await new KeyVaultService()
+    .getOsmCredentials();
 
-  entraForm.set("client_id", getClientId());
+  tokenForm.set("client_id", clientId);
 
-  const clientSecret = getClientSecret() ??
-    form.get("client_secret") ??
+  const incomingClientSecret = form.get("client_secret") ??
     getBasicAuthClientSecret(request);
 
-  if (clientSecret) {
-    entraForm.set("client_secret", clientSecret);
+  if (incomingClientSecret && incomingClientSecret !== clientSecret) {
+    return oauthError(
+      401,
+      "invalid_client",
+      "The OAuth client secret is invalid.",
+    );
   }
+
+  tokenForm.set("client_secret", clientSecret);
 
   for (const name of [
     "grant_type",
@@ -238,20 +241,20 @@ export async function exchangeToken(
     "scope",
     "refresh_token",
   ]) {
-    appendIfPresent(entraForm, form, name);
+    appendIfPresent(tokenForm, form, name);
   }
 
-  const response = await fetch(`${getEntraBaseUrl()}/token`, {
+  const response = await fetch(tokenUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: entraForm,
+    body: tokenForm,
   });
   const body = await response.text();
 
   if (!response.ok) {
-    context.error(`Entra token exchange failed with status ${response.status}: ${body}`);
+    context.error(`OSM token exchange failed with status ${response.status}: ${body}`);
   }
 
   return {

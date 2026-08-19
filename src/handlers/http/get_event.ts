@@ -4,6 +4,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
+import { createOsmClientForRequest } from "../../utils/http.js";
+
 import {
   OSMClient,
   OsmRequestError,
@@ -33,7 +35,7 @@ export async function getEvent(
     `Getting event "${eventId}" for section "${sectionId}".`,
   );
 
-  const client = await OSMClient.create();
+  const client = await createOsmClientForRequest(request);
 
   try {
     const event = await client.getEvent(sectionId, eventId);

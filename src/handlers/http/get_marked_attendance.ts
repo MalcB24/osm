@@ -4,6 +4,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
+import { createOsmClientForRequest } from "../../utils/http.js";
+
 import { OSMClient } from "../../clients/osm_client.js";
 
 function getRequiredRouteParam(
@@ -31,7 +33,7 @@ export async function getMarkedAttendance(
     `Getting marked attendance for event "${eventId}" in section "${sectionId}" term "${termId}".`,
   );
 
-  const client = await OSMClient.create();
+  const client = await createOsmClientForRequest(request);
 
   try {
     const attendance = await client.getMarkedAttendance(

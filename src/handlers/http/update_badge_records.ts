@@ -4,6 +4,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
+import { createOsmClientForRequest } from "../../utils/http.js";
+
 import {
   OSMClient,
   OsmRequestError,
@@ -247,7 +249,7 @@ export async function updateBadgeRecords(
     `Updating badge "${body.badgeId}" version "${body.badgeVersion}" in section "${sectionId}" term "${termId}".`,
   );
 
-  const client = await OSMClient.create();
+  const client = await createOsmClientForRequest(request);
 
   try {
     if (shouldUseMultipleRecords(body)) {

@@ -49,6 +49,7 @@ export class OSMClient {
   private clientId = "";
   private clientSecret = "";
   private token!: OAuthToken;
+  private saveTokenToKeyVault = true;
 
   private readonly keyVault: KeyVaultService;
 
@@ -60,6 +61,24 @@ export class OSMClient {
     const client = new OSMClient();
 
     await client.getOsmClientAzure();
+
+    if (!(await client.checkResourceAccess())) {
+      await client.close();
+      throw new Error("Unable to access OSM resource.");
+    }
+
+    return client;
+  }
+
+  static async createWithAccessToken(
+    accessToken: string,
+  ): Promise<OSMClient> {
+    const client = new OSMClient();
+
+    client.saveTokenToKeyVault = false;
+    client.token = {
+      access_token: accessToken,
+    };
 
     if (!(await client.checkResourceAccess())) {
       await client.close();
@@ -145,6 +164,10 @@ export class OSMClient {
    * No token.json or other local file is created.
    */
   private async saveToken(): Promise<void> {
+    if (!this.saveTokenToKeyVault) {
+      return;
+    }
+
     await this.keyVault.saveOsmToken(this.token);
   }
 

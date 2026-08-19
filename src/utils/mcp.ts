@@ -11,49 +11,61 @@ export interface McpToolRequest {
   [key: string]: unknown;
 }
 
-function getObjectKeys(value: unknown): string[] {
+function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === "object"
-    ? Object.keys(value)
-    : [];
+    ? value as Record<string, unknown>
+    : undefined;
 }
 
-function summarizeObject(value: unknown, depth = 0): unknown {
-  if (value === null || typeof value !== "object") {
-    return typeof value;
+function getRecordProperty(
+  value: unknown,
+  name: string,
+): unknown {
+  const record = asRecord(value);
+
+  if (!record) {
+    return undefined;
   }
 
-  if (depth >= 3) {
-    return {
-      type: Array.isArray(value) ? "array" : "object",
-      keys: getObjectKeys(value),
-    };
+  return record[name] ??
+    record[name.toLowerCase()] ??
+    record[name.toUpperCase()];
+}
+
+function getHeader(
+  headers: unknown,
+  name: string,
+): string | undefined {
+  const value = getRecordProperty(headers, name);
+
+  return typeof value === "string" && value.length > 0
+    ? value
+    : undefined;
+}
+
+function getMcpAuthorizationHeader(
+  context: InvocationContext,
+): string | undefined {
+  const transport = getRecordProperty(context.triggerMetadata, "transport");
+  const properties = getRecordProperty(transport, "properties");
+  const headers = getRecordProperty(properties, "headers");
+
+  return getHeader(headers, "authorization");
+}
+
+function getBearerToken(
+  authorizationHeader: string | undefined,
+): string | undefined {
+  if (!authorizationHeader?.toLowerCase().startsWith("bearer ")) {
+    return undefined;
   }
 
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [
-      key,
-      {
-        type: Array.isArray(child) ? "array" : typeof child,
-        keys: getObjectKeys(child),
-        shape: summarizeObject(child, depth + 1),
-      },
-    ]),
-  );
+  return authorizationHeader.slice("bearer ".length).trim();
 }
 
 export function getToolArguments(
   toolRequest: McpToolRequest,
 ): Record<string, unknown> {
-  console.log(
-    "MCP tool request shape",
-    JSON.stringify({
-      topLevelKeys: Object.keys(toolRequest),
-      argumentKeys: getObjectKeys(toolRequest.arguments),
-      metaKeys: getObjectKeys(toolRequest._meta),
-      requestShape: summarizeObject(toolRequest),
-    }),
-  );
-
   return toolRequest.arguments ?? {};
 }
 
@@ -94,16 +106,19 @@ export async function withOsmClient<T>(
   context: InvocationContext,
   action: (client: OSMClient) => Promise<T>,
 ): Promise<string> {
-  context.log(
-    "MCP invocation context shape",
-    JSON.stringify({
-      functionName: context.functionName,
-      triggerMetadataKeys: getObjectKeys(context.triggerMetadata),
-      triggerMetadataShape: summarizeObject(context.triggerMetadata),
-    }),
-  );
+  const bearerToken = getBearerToken(getMcpAuthorizationHeader(context));
 
-  const client = await OSMClient.create();
+  if (!bearerToken) {
+    context.error("Missing Authorization bearer token for MCP request.");
+
+    return JSON.stringify({
+      error: "Missing Authorization bearer token.",
+    });
+  }
+
+  const client = await OSMClient.createWithAccessToken(bearerToken);
+
+  context.log("Using caller OSM bearer token for MCP request.");
 
   try {
     return JSON.stringify(await action(client));

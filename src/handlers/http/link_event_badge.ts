@@ -4,6 +4,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
+import { createOsmClientForRequest } from "../../utils/http.js";
+
 import {
   OSMClient,
   OsmRequestError,
@@ -36,7 +38,7 @@ export async function linkEventBadge(
     `Linking badge "${body.badgeId}" version "${body.badgeVersion}" column "${body.columnId}" to event "${eventId}" in section "${sectionId}".`,
   );
 
-  const client = await OSMClient.create();
+  const client = await createOsmClientForRequest(request);
 
   try {
     const link: CreateEventBadgeLinkRequest = {
