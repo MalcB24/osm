@@ -13,6 +13,7 @@ import { getMarkedAttendance } from "../handlers/http/get_marked_attendance.js";
 import { getScouts } from "../handlers/http/get_scouts.js";
 import { getSection } from "../handlers/http/get_section.js";
 import { getTerms } from "../handlers/http/get_terms.js";
+import { getVersion } from "../handlers/http/get_version.js";
 import { linkEventBadge } from "../handlers/http/link_event_badge.js";
 import {
   exchangeToken,
@@ -74,6 +75,13 @@ app.http("oauth_token", {
   authLevel: "anonymous",
   route: "oauth/token",
   handler: exchangeToken,
+});
+
+app.http("get_version", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "version",
+  handler: getVersion,
 });
 
 app.http("get_section", {

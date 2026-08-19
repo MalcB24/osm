@@ -164,6 +164,12 @@ Base URL locally:
 https://localhost:7071/api
 ```
 
+Public endpoint:
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/version` | Get minimal app version metadata without authentication |
+
 All HTTP API routes require:
 
 ```text
