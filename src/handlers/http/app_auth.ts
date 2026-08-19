@@ -7,27 +7,40 @@ import {
 const authorizationBaseUrl = "https://osm.scouts.mt/oauth/authorize";
 const tokenUrl = "https://osm.scouts.mt/oauth/token";
 const resourceUrl = "https://osm.scouts.mt/oauth/resource";
-const defaultScope = [
-  "section:member:read",
-  "section:event:write",
-  "section:badge:write",
+const supportedScopes = [
+  "section:administration:read",
+  "section:administration:write",
+  "section:administration:admin",
+  "section:attendance:read",
   "section:attendance:write",
-].join(" ");
+  "section:badge:read",
+  "section:badge:write",
+  "section:event:read",
+  "section:event:write",
+  "section:finance:read",
+  "section:finance:write",
+  "section:finance:admin",
+  "section:flexirecord:read",
+  "section:flexirecord:write",
+  "section:member:read",
+  "section:member:write",
+  "section:programme:read",
+  "section:programme:write",
+  "section:quartermaster:read",
+  "section:quartermaster:write",
+];
+const defaultScopes = [
+  "section:member:read",
+  "section:event:read",
+  "section:badge:read",
+  "section:attendance:read",
+];
+const defaultScope = defaultScopes.join(" ");
 
 function getOrigin(request: HttpRequest): string {
   const url = new URL(request.url);
 
   return `${url.protocol}//${url.host}`;
-}
-
-function getRequiredSetting(name: string): string {
-  const value = process.env[name];
-
-  if (!value) {
-    throw new Error(`Missing required app setting "${name}".`);
-  }
-
-  return value;
 }
 
 function getBasicAuthClientSecret(request: HttpRequest): string | undefined {
@@ -49,12 +62,6 @@ function getBasicAuthClientSecret(request: HttpRequest): string | undefined {
   return decodeURIComponent(credentials.slice(separatorIndex + 1));
 }
 
-function getScope(): string {
-  return process.env.CHATGPT_AUTH_SCOPE ??
-    process.env.CHATGPT_MCP_AUTH_SCOPE ??
-    defaultScope;
-}
-
 function getResourceUrl(request: HttpRequest): string {
   return process.env.CHATGPT_AUTH_RESOURCE_URL ??
     process.env.CHATGPT_MCP_RESOURCE_URL ??
@@ -70,7 +77,11 @@ function getIssuer(request: HttpRequest): string {
 }
 
 function getScopes(): string[] {
-  return getScope().split(/\s+/).filter(Boolean);
+  return supportedScopes;
+}
+
+function getRequestedScope(request: HttpRequest): string {
+  return request.query.get("scope") ?? defaultScope;
 }
 
 function jsonResponse(jsonBody: unknown): HttpResponseInit {
@@ -182,7 +193,7 @@ export async function startAuthorization(
 
   authorizationUrl.searchParams.set("client_id", clientId);
   authorizationUrl.searchParams.set("response_type", "code");
-  authorizationUrl.searchParams.set("scope", getScope());
+  authorizationUrl.searchParams.set("scope", getRequestedScope(request));
 
   appendIfPresent(authorizationUrl.searchParams, request.query, "redirect_uri");
   appendIfPresent(authorizationUrl.searchParams, request.query, "state");
