@@ -17,9 +17,16 @@ function getObjectKeys(value: unknown): string[] {
     : [];
 }
 
-function summarizeObject(value: unknown): unknown {
+function summarizeObject(value: unknown, depth = 0): unknown {
   if (value === null || typeof value !== "object") {
     return typeof value;
+  }
+
+  if (depth >= 3) {
+    return {
+      type: Array.isArray(value) ? "array" : "object",
+      keys: getObjectKeys(value),
+    };
   }
 
   return Object.fromEntries(
@@ -28,6 +35,7 @@ function summarizeObject(value: unknown): unknown {
       {
         type: Array.isArray(child) ? "array" : typeof child,
         keys: getObjectKeys(child),
+        shape: summarizeObject(child, depth + 1),
       },
     ]),
   );
