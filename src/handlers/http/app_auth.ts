@@ -190,7 +190,6 @@ export async function startAuthorization(
   appendIfPresent(authorizationUrl.searchParams, request.query, "state");
   appendIfPresent(authorizationUrl.searchParams, request.query, "code_challenge");
   appendIfPresent(authorizationUrl.searchParams, request.query, "code_challenge_method");
-  appendIfPresent(authorizationUrl.searchParams, request.query, "resource");
   appendIfPresent(authorizationUrl.searchParams, request.query, "prompt");
   appendIfPresent(authorizationUrl.searchParams, request.query, "login_hint");
 
