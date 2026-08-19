@@ -7,11 +7,45 @@ import {
 
 export interface McpToolRequest {
   arguments?: Record<string, unknown>;
+
+  [key: string]: unknown;
+}
+
+function getObjectKeys(value: unknown): string[] {
+  return value !== null && typeof value === "object"
+    ? Object.keys(value)
+    : [];
+}
+
+function summarizeObject(value: unknown): unknown {
+  if (value === null || typeof value !== "object") {
+    return typeof value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      {
+        type: Array.isArray(child) ? "array" : typeof child,
+        keys: getObjectKeys(child),
+      },
+    ]),
+  );
 }
 
 export function getToolArguments(
   toolRequest: McpToolRequest,
 ): Record<string, unknown> {
+  console.log(
+    "MCP tool request shape",
+    JSON.stringify({
+      topLevelKeys: Object.keys(toolRequest),
+      argumentKeys: getObjectKeys(toolRequest.arguments),
+      metaKeys: getObjectKeys(toolRequest._meta),
+      requestShape: summarizeObject(toolRequest),
+    }),
+  );
+
   return toolRequest.arguments ?? {};
 }
 
@@ -52,6 +86,15 @@ export async function withOsmClient<T>(
   context: InvocationContext,
   action: (client: OSMClient) => Promise<T>,
 ): Promise<string> {
+  context.log(
+    "MCP invocation context shape",
+    JSON.stringify({
+      functionName: context.functionName,
+      triggerMetadataKeys: getObjectKeys(context.triggerMetadata),
+      triggerMetadataShape: summarizeObject(context.triggerMetadata),
+    }),
+  );
+
   const client = await OSMClient.create();
 
   try {
