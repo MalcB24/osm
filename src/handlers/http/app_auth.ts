@@ -30,6 +30,10 @@ function getClientId(): string {
   return getRequiredSetting("ENTRA_CLIENT_ID");
 }
 
+function getClientSecret(): string | undefined {
+  return process.env.ENTRA_CLIENT_SECRET;
+}
+
 function getScope(): string {
   return process.env.CHATGPT_AUTH_SCOPE ??
     process.env.CHATGPT_MCP_AUTH_SCOPE ??
@@ -63,6 +67,25 @@ function jsonResponse(jsonBody: unknown): HttpResponseInit {
       "Content-Type": "application/json",
     },
     jsonBody,
+  };
+}
+
+function oauthError(
+  status: number,
+  error: string,
+  errorDescription: string,
+): HttpResponseInit {
+  return {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      Pragma: "no-cache",
+    },
+    jsonBody: {
+      error,
+      error_description: errorDescription,
+    },
   };
 }
 
@@ -100,17 +123,16 @@ export async function getAuthorizationServerMetadata(
   context.log("Returning app OAuth authorization server metadata.");
 
   const issuer = getIssuer(request);
-  const entraBaseUrl = getEntraBaseUrl();
 
   return jsonResponse({
     issuer,
     authorization_endpoint: `${issuer}/oauth/authorize`,
-    token_endpoint: `${entraBaseUrl}/token`,
+    token_endpoint: `${issuer}/oauth/token`,
     jwks_uri: `https://login.microsoftonline.com/${getTenantId()}/discovery/v2.0/keys`,
     userinfo_endpoint: "https://graph.microsoft.com/oidc/userinfo",
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
-    token_endpoint_auth_methods_supported: ["none", "client_secret_post"],
+    token_endpoint_auth_methods_supported: ["client_secret_post"],
     code_challenge_methods_supported: ["S256"],
     scopes_supported: getScopes(),
   });
@@ -150,5 +172,63 @@ export async function startAuthorization(
     headers: {
       Location: authorizationUrl.toString(),
     },
+  };
+}
+
+export async function exchangeToken(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  context.log("Exchanging app OAuth token with Entra.");
+
+  const form = new URLSearchParams(await request.text());
+  const grantType = form.get("grant_type");
+
+  if (grantType !== "authorization_code" && grantType !== "refresh_token") {
+    return oauthError(
+      400,
+      "unsupported_grant_type",
+      "Only authorization_code and refresh_token grants are supported.",
+    );
+  }
+
+  const entraForm = new URLSearchParams();
+
+  entraForm.set("client_id", getClientId());
+
+  const clientSecret = getClientSecret() ?? form.get("client_secret");
+
+  if (clientSecret) {
+    entraForm.set("client_secret", clientSecret);
+  }
+
+  for (const name of [
+    "grant_type",
+    "code",
+    "redirect_uri",
+    "code_verifier",
+    "scope",
+    "refresh_token",
+  ]) {
+    appendIfPresent(entraForm, form, name);
+  }
+
+  const response = await fetch(`${getEntraBaseUrl()}/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: entraForm,
+  });
+  const body = await response.text();
+
+  return {
+    status: response.status,
+    headers: {
+      "Content-Type": response.headers.get("Content-Type") ?? "application/json",
+      "Cache-Control": "no-store",
+      Pragma: "no-cache",
+    },
+    body,
   };
 }

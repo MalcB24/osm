@@ -13,6 +13,7 @@ import { getSection } from "../handlers/http/get_section.js";
 import { getTerms } from "../handlers/http/get_terms.js";
 import { linkEventBadge } from "../handlers/http/link_event_badge.js";
 import {
+  exchangeToken,
   getAuthorizationServerMetadata,
   getOpenIdConfiguration,
   getProtectedResourceMetadata,
@@ -55,10 +56,24 @@ app.http("oauth_authorization_server_metadata", {
   handler: getAuthorizationServerMetadata,
 });
 
+app.http("oauth_authorization_server_metadata_oauth", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: ".well-known/oauth-authorization-server/oauth",
+  handler: getAuthorizationServerMetadata,
+});
+
 app.http("oidc_configuration", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: ".well-known/openid-configuration",
+  handler: getOpenIdConfiguration,
+});
+
+app.http("oidc_configuration_oauth", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: ".well-known/openid-configuration/oauth",
   handler: getOpenIdConfiguration,
 });
 
@@ -67,6 +82,13 @@ app.http("oauth_authorize", {
   authLevel: "anonymous",
   route: "oauth/authorize",
   handler: startAuthorization,
+});
+
+app.http("oauth_token", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "oauth/token",
+  handler: exchangeToken,
 });
 
 app.http("get_section", {
