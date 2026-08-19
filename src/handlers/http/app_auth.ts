@@ -34,6 +34,25 @@ function getClientSecret(): string | undefined {
   return process.env.ENTRA_CLIENT_SECRET;
 }
 
+function getBasicAuthClientSecret(request: HttpRequest): string | undefined {
+  const authorization = request.headers.get("authorization");
+
+  if (!authorization?.toLowerCase().startsWith("basic ")) {
+    return undefined;
+  }
+
+  const credentials = Buffer
+    .from(authorization.slice("basic ".length), "base64")
+    .toString("utf8");
+  const separatorIndex = credentials.indexOf(":");
+
+  if (separatorIndex === -1) {
+    return undefined;
+  }
+
+  return decodeURIComponent(credentials.slice(separatorIndex + 1));
+}
+
 function getScope(): string {
   return process.env.CHATGPT_AUTH_SCOPE ??
     process.env.CHATGPT_MCP_AUTH_SCOPE ??
@@ -132,7 +151,10 @@ export async function getAuthorizationServerMetadata(
     userinfo_endpoint: "https://graph.microsoft.com/oidc/userinfo",
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
-    token_endpoint_auth_methods_supported: ["client_secret_post"],
+    token_endpoint_auth_methods_supported: [
+      "client_secret_post",
+      "client_secret_basic",
+    ],
     code_challenge_methods_supported: ["S256"],
     scopes_supported: getScopes(),
   });
@@ -196,7 +218,9 @@ export async function exchangeToken(
 
   entraForm.set("client_id", getClientId());
 
-  const clientSecret = getClientSecret() ?? form.get("client_secret");
+  const clientSecret = getClientSecret() ??
+    form.get("client_secret") ??
+    getBasicAuthClientSecret(request);
 
   if (clientSecret) {
     entraForm.set("client_secret", clientSecret);
@@ -221,6 +245,10 @@ export async function exchangeToken(
     body: entraForm,
   });
   const body = await response.text();
+
+  if (!response.ok) {
+    context.error(`Entra token exchange failed with status ${response.status}: ${body}`);
+  }
 
   return {
     status: response.status,
