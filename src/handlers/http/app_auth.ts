@@ -65,10 +65,13 @@ function getResourceUrl(request: HttpRequest): string {
     getOrigin(request);
 }
 
-function getIssuer(request: HttpRequest): string {
-  return process.env.CHATGPT_AUTH_ISSUER ??
-    process.env.CHATGPT_MCP_AUTH_ISSUER ??
-    getOrigin(request);
+function getPublicAuthBaseUrl(request: HttpRequest): string {
+  return process.env.CHATGPT_AUTH_BASE_URL ?? getOrigin(request);
+}
+
+function getEntraIssuer(): string {
+  return process.env.ENTRA_ISSUER ??
+    `https://login.microsoftonline.com/${getTenantId()}/v2.0`;
 }
 
 function getEntraBaseUrl(): string {
@@ -129,7 +132,7 @@ export async function getProtectedResourceMetadata(
   return jsonResponse({
     resource: getResourceUrl(request),
     authorization_servers: [
-      getIssuer(request),
+      getPublicAuthBaseUrl(request),
     ],
     scopes_supported: getScopes(),
   });
@@ -141,16 +144,18 @@ export async function getAuthorizationServerMetadata(
 ): Promise<HttpResponseInit> {
   context.log("Returning app OAuth authorization server metadata.");
 
-  const issuer = getIssuer(request);
+  const publicAuthBaseUrl = getPublicAuthBaseUrl(request);
 
   return jsonResponse({
-    issuer,
-    authorization_endpoint: `${issuer}/oauth/authorize`,
-    token_endpoint: `${issuer}/oauth/token`,
+    issuer: getEntraIssuer(),
+    authorization_endpoint: `${publicAuthBaseUrl}/oauth/authorize`,
+    token_endpoint: `${publicAuthBaseUrl}/oauth/token`,
     jwks_uri: `https://login.microsoftonline.com/${getTenantId()}/discovery/v2.0/keys`,
     userinfo_endpoint: "https://graph.microsoft.com/oidc/userinfo",
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
+    subject_types_supported: ["pairwise"],
+    id_token_signing_alg_values_supported: ["RS256"],
     token_endpoint_auth_methods_supported: [
       "client_secret_post",
       "client_secret_basic",
